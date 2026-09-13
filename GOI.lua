@@ -711,8 +711,8 @@ end
 function ScoopHub_Library:CreateWindow(Config)
 	local Title = Config[1] or Config.Title or ""
 	local Description = Config[2] or Config.Description or ""
-	local TabWidth = Config[3] or Config["Tab Width"] or 120
-	local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(580, 380)
+	local TabWidth = Config[3] or Config["Tab Width"] or 100
+	local SizeUi = Config[4] or Config.SizeUi or UDim2.fromOffset(580, 350)
 	local DiscordInvite = Config.Discord or Config[5] or "discord.gg/WxgqUa9Qz"
 	local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
 	local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://90541504618217"
