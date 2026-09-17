@@ -717,7 +717,7 @@ function ScoopHub_Library:CreateWindow(Config)
 	-- cannot override the compact layout through CreateWindow(Config).
 	local TabWidth = 135
 	local SizeUi = UDim2.fromOffset(600, 400)
-	local DiscordInvite = Config.Discord or Config[5] or "discord.gg/WxgqUa9Qz"
+	local DiscordInvite = Config.Discord or Config[5] or "discord.gg/9czKzA5mVt"
 	local DiscordLogo = Config.DiscordIcon or Config[6] or "rbxassetid://94434236999817"
 	local HubLogo = Config.Logo or Config.TitleLogo or "rbxassetid://90541504618217"
 	local HubLogoSize = Config.LogoSize or 26
@@ -4016,3 +4016,5 @@ end
 return ScoopHub_Library
 
 -- might be good now
+--
+-- update 2
