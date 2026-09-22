@@ -40,6 +40,7 @@ local Theme = {
 }
 
 Library.Theme = Theme
+Library.Build = "V5_RED_FIXED_USER_STARS"
 Library.Unloaded = false
 Library.NotificationsEnabled = false
 Library.TooltipsEnabled = false
@@ -345,7 +346,7 @@ function Library:CreateWindow(config)
         Size = UDim2.fromScale(1, 1),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ZIndex = 0,
+        ZIndex = 1,
     }, main)
 
     local starRandom =
@@ -386,7 +387,7 @@ function Library:CreateWindow(config)
                     0.78
                 ),
             BorderSizePixel = 0,
-            ZIndex = 0,
+            ZIndex = 1,
         }, decorativeStars), 20)
     end
 
@@ -913,6 +914,7 @@ function Library:CreateWindow(config)
             LeftSectionCount = 0,
             RightSectionCount = 0,
             ContentTopOffset = 4,
+            FixedContent = false,
         }
 
         pages[name] = page
@@ -920,15 +922,31 @@ function Library:CreateWindow(config)
         tabOrder[#tabOrder + 1] = name
 
         local function updateCanvas()
-            local leftHeight = leftLayout.AbsoluteContentSize.Y
-            local rightHeight = rightLayout.AbsoluteContentSize.Y
+            if tab.FixedContent then
+                scroll.CanvasSize =
+                    UDim2.new(0, 0, 0, 0)
+
+                scroll.CanvasPosition =
+                    Vector2.new(0, 0)
+
+                return
+            end
+
+            local leftHeight =
+                leftLayout.AbsoluteContentSize.Y
+
+            local rightHeight =
+                rightLayout.AbsoluteContentSize.Y
 
             scroll.CanvasSize = UDim2.new(
                 0,
                 0,
                 0,
                 (tab.ContentTopOffset or 4)
-                    + math.max(leftHeight, rightHeight)
+                    + math.max(
+                        leftHeight,
+                        rightHeight
+                    )
                     + 8
             )
         end
@@ -1885,12 +1903,19 @@ function Library:CreateWindow(config)
 
             self.TitleLabel.Visible = false
             self.StatusLabel.Visible = false
+            self.FixedContent = true
 
             self.Scroll.Position =
                 UDim2.new(0, 0, 0, 0)
 
             self.Scroll.Size =
                 UDim2.new(1, 0, 1, 0)
+
+            -- USER is a fixed dashboard, not a scrolling feature page.
+            self.Scroll.ScrollingEnabled = false
+            self.Scroll.ScrollBarThickness = 0
+            self.Scroll.CanvasPosition = Vector2.new(0, 0)
+            self.Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 
             self.ContentTopOffset = 49
 
@@ -3406,3 +3431,7 @@ function Library:SetNotification(info)
 end
 
 return setmetatable({}, Library)
+--
+
+
+-- herghuoehgaeou
