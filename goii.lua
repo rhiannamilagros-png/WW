@@ -1,3436 +1,484 @@
---// SCOOPHUB V2 GUI LIBRARY
---// Reusable shell based on the compact ScoopHub V2 layout.
---// Keeps the header, logo, Discord pill, left sidebar, search box,
---// tab placement, theme, responsive scaling, minimize/restore, and
---// two-column card layout. No game-specific automation is included.
+-- ScoopHub V2.2 exact-source GUI library (fixed red)
+local Players=game:GetService("Players")
+local UIS=game:GetService("UserInputService")
+local TS=game:GetService("TweenService")
+local TeleportService=game:GetService("TeleportService")
+local LP=Players.LocalPlayer
 
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_SOURCE_LIBRARY"}
 
-local LocalPlayer = Players.LocalPlayer
-
-local Library = {}
-Library.__index = Library
-
---------------------------------------------------
--- THEME
---------------------------------------------------
-
-local Theme = {
-    Bg = Color3.fromRGB(9, 5, 8),
-    Panel = Color3.fromRGB(22, 10, 14),
-    Line = Color3.fromRGB(154, 44, 53),
-    Red = Color3.fromRGB(231, 47, 59),
-    RedDark = Color3.fromRGB(145, 28, 39),
-    Text = Color3.fromRGB(255, 111, 120),
-    Dim = Color3.fromRGB(190, 73, 84),
-    White = Color3.fromRGB(246, 244, 252),
-    Muted = Color3.fromRGB(199, 170, 176),
-    Success = Color3.fromRGB(99, 215, 163),
-    Input = Color3.fromRGB(49, 41, 49),
-    Surface2 = Color3.fromRGB(37, 17, 23),
-    Surface3 = Color3.fromRGB(52, 31, 37),
-    Stroke = Color3.fromRGB(179, 52, 63),
-    Top = Color3.fromRGB(39, 11, 17),
-    Mid = Color3.fromRGB(8, 5, 8),
-    Low = Color3.fromRGB(34, 8, 11),
-    Font = Enum.Font.GothamBold,
-    Body = Enum.Font.Gotham,
+local T={
+ Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
+ Line=Color3.fromRGB(154,44,53),Red=Color3.fromRGB(231,47,59),
+ RedDark=Color3.fromRGB(145,28,39),Text=Color3.fromRGB(255,111,120),
+ Dim=Color3.fromRGB(190,73,84),White=Color3.fromRGB(246,244,252),
+ Muted=Color3.fromRGB(199,170,176),Success=Color3.fromRGB(99,215,163),
+ Input=Color3.fromRGB(49,41,49),Surface2=Color3.fromRGB(37,17,23),
+ Surface3=Color3.fromRGB(52,31,37),Stroke=Color3.fromRGB(179,52,63),
+ Top=Color3.fromRGB(39,11,17),Mid=Color3.fromRGB(8,5,8),
+ Low=Color3.fromRGB(34,8,11),Tab=Color3.fromRGB(35,16,22),
+ Font=Enum.Font.GothamBold,Body=Enum.Font.Gotham
 }
+Library.Theme=T
 
-Library.Theme = Theme
-Library.Build = "V6_USER_BORDER_FIX"
-Library.Unloaded = false
-Library.NotificationsEnabled = false
-Library.TooltipsEnabled = false
-Library.LowGraphicsEnabled = false
-Library.AutoRejoinEnabled = false
+local W,H=690,445
+local HEADER,SIDE,GAP=38,132,8
+local USER_SOFT=Color3.fromRGB(92,67,72)
+local USER_BUTTON=Color3.fromRGB(50,14,18)
+local USER_BUTTON_HOVER=Color3.fromRGB(74,18,24)
 
---------------------------------------------------
--- CONSTANTS
---------------------------------------------------
-
-local DEFAULT_WIDTH = 690
-local DEFAULT_HEIGHT = 445
-local HEADER_HEIGHT = 38
-local SIDEBAR_WIDTH = 132
-local GAP = 8
-
---------------------------------------------------
--- HELPERS
---------------------------------------------------
-
-local function new(className, props, parent)
-    local object = Instance.new(className)
-
-    for property, value in pairs(props or {}) do
-        object[property] = value
-    end
-
-    if parent then
-        object.Parent = parent
-    end
-
-    return object
+local function N(c,p,par)
+ local x=Instance.new(c)
+ for k,v in pairs(p or {}) do x[k]=v end
+ x.Parent=par
+ return x
+end
+local function C(x,r) N("UICorner",{CornerRadius=UDim.new(0,r or 6)},x) return x end
+local function S(x,col,tr,th) return N("UIStroke",{Color=col or T.Line,Transparency=tr or 0,Thickness=th or 1},x) end
+local function tw(x,p,t) local z=TS:Create(x,TweenInfo.new(t or .14,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),p);z:Play();return z end
+local function label(par,text,pos,size,ts,col,font,align)
+ return N("TextLabel",{BackgroundTransparency=1,Text=tostring(text or ""),Position=pos,Size=size,
+  TextColor3=col or T.White,Font=font or T.Body,TextSize=ts or 10,
+  TextXAlignment=align or Enum.TextXAlignment.Left},par)
+end
+local function gradient(x,a,b,rot) N("UIGradient",{Color=ColorSequence.new(a,b),Rotation=rot or 20},x) end
+local function panel(par,pos,size,title)
+ local f=C(N("Frame",{Position=pos,Size=size,BackgroundColor3=T.Panel,BackgroundTransparency=.12,
+  BorderSizePixel=0,ClipsDescendants=true},par),7)
+ gradient(f,Color3.fromRGB(43,17,24),Color3.fromRGB(18,8,12))
+ S(f,T.Line,.22,1.1)
+ if title then label(f,title,UDim2.new(0,9,0,5),UDim2.new(1,-18,0,14),10,T.Text,T.Font) end
+ return f
+end
+local function btn(par,text,pos,size,col)
+ return C(N("TextButton",{Text=text,Position=pos,Size=size,BackgroundColor3=col or T.Red,
+  TextColor3=T.White,Font=T.Font,TextSize=10,BorderSizePixel=0,AutoButtonColor=false},par),5)
+end
+local function parent()
+ local ok,h=pcall(function() return gethui and gethui() end)
+ return ok and h or LP:WaitForChild("PlayerGui")
+end
+local function norm(v)
+ local r={}
+ if type(v)~="table" then if v~=nil then r[1]=tostring(v) end return r end
+ if #v>0 then for _,x in ipairs(v) do r[#r+1]=tostring(x) end
+ else for x,on in pairs(v) do if on then r[#r+1]=tostring(x) end end end
+ return r
+end
+local function has(t,v) for _,x in ipairs(t or {}) do if x==v then return true end end return false end
+local function fmt(t,e)
+ t=norm(t)
+ if #t==0 then return e or "Select options..." end
+ if #t==1 then return t[1] end
+ if #t==2 then return t[1]..", "..t[2] end
+ return t[1]..", "..t[2].." +"..tostring(#t-2)
 end
 
-local function corner(object, radius)
-    new("UICorner", {
-        CornerRadius = UDim.new(0, radius or 6),
-    }, object)
+function Library:CreateWindow(cfg)
+ cfg=cfg or {}
+ Library.Unloaded=false
+ local GP=parent()
+ local guiName=tostring(cfg.GuiName or "ScoopHubV22Exact")
+ local old=GP:FindFirstChild(guiName); if old then old:Destroy() end
+ local conns={}
+ local function own(c) if c then conns[#conns+1]=c end return c end
 
-    return object
-end
+ local SG=N("ScreenGui",{Name=guiName,ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},GP)
+ local Holder=N("Frame",{AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
+  Size=UDim2.fromOffset(W,H),BackgroundTransparency=1},SG)
+ local Scale=N("UIScale",{Scale=1},Holder)
+ local Shadow=N("ImageLabel",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Image="rbxassetid://6015897843",
+  ImageColor3=Color3.fromRGB(4,5,8),ImageTransparency=.38,ScaleType=Enum.ScaleType.Slice,
+  SliceCenter=Rect.new(49,49,450,450)},Holder)
+ local Main=C(N("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=T.Bg,BackgroundTransparency=.04,
+  BorderSizePixel=0,ClipsDescendants=true},Shadow),8)
+ S(Main,T.Stroke,.86)
+ N("UIGradient",{Color=ColorSequence.new({
+  ColorSequenceKeypoint.new(0,T.Top),ColorSequenceKeypoint.new(.52,T.Mid),ColorSequenceKeypoint.new(1,T.Low)
+ }),Rotation=16},Main)
 
-local function stroke(object, color, transparency, thickness)
-    return new("UIStroke", {
-        Color = color or Theme.Line,
-        Transparency = transparency or 0,
-        Thickness = thickness or 1,
-    }, object)
-end
+ local mobile=UIS.TouchEnabled and (not UIS.KeyboardEnabled or not UIS.MouseEnabled)
+ local function resize()
+  local cam=workspace.CurrentCamera;if not cam then return end
+  local v=cam.ViewportSize;local b=math.min((v.X-24)/W,(v.Y-24)/H)
+  Scale.Scale=mobile and math.clamp(b*.80,.45,.80) or math.clamp(b,.55,1)
+ end
+ resize()
+ own(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(resize))
+ task.defer(function() if workspace.CurrentCamera then own(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize)) end end)
 
-local function tween(object, properties, duration)
-    local animation = TweenService:Create(
-        object,
-        TweenInfo.new(
-            duration or 0.14,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.Out
-        ),
-        properties
-    )
+ -- exact 80-star background from V2.2
+ local stars=N("Frame",{Name="ScoopHubDecorativeStars",Size=UDim2.fromScale(1,1),BackgroundTransparency=1},Main)
+ local rnd=Random.new(LP.UserId)
+ local sc={Color3.fromRGB(255,218,218),Color3.fromRGB(246,141,151),Color3.fromRGB(255,205,156)}
+ for i=1,80 do
+  local d=rnd:NextNumber()>.8 and 2 or 1
+  C(N("Frame",{Name="MainStar",Position=UDim2.fromScale(rnd:NextNumber(.01,.99),rnd:NextNumber(.02,.98)),
+   Size=UDim2.fromOffset(d,d),BackgroundColor3=sc[rnd:NextInteger(1,#sc)],
+   BackgroundTransparency=rnd:NextNumber(.45,.78),BorderSizePixel=0},stars),20)
+ end
 
-    animation:Play()
+ -- exact header geometry
+ local Header=N("Frame",{Size=UDim2.new(1,0,0,HEADER),BackgroundTransparency=1,Active=true,ZIndex=50},Main)
+ N("ImageLabel",{Image=cfg.Logo or "rbxassetid://90541504618217",BackgroundTransparency=1,
+  Position=UDim2.new(0,10,.5,-12),Size=UDim2.fromOffset(24,24)},Header)
+ label(Header,cfg.Title or "SCOOPHUB",UDim2.new(0,40,0,5),UDim2.fromOffset(82,16),14,Color3.fromRGB(242,92,101),T.Font)
+ label(Header,"    "..tostring(cfg.Version or "V2.2"),UDim2.new(0,105,0,6),UDim2.fromOffset(35,13),11,T.Muted,T.Body)
+ label(Header,cfg.Subtitle or "by Scoop",UDim2.new(0,40,0,20),UDim2.fromOffset(100,13),10,Color3.fromRGB(166,174,187))
 
-    return animation
-end
+ local invite=tostring(cfg.Discord or "discord.gg/WxgqUa9Qz")
+ local DiscordPill=C(N("Frame",{Name="DiscordPill",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.55,0,.5,0),
+  Size=UDim2.fromOffset(174,22),BackgroundColor3=T.Surface3,BackgroundTransparency=.08,
+  BorderSizePixel=0,ClipsDescendants=true},Header),11)
+ S(DiscordPill,T.Line,.62)
+ N("ImageLabel",{Name="DiscordIcon",Image=cfg.DiscordIcon or "rbxassetid://94434236999817",
+  ImageColor3=Color3.fromRGB(255,255,255),ScaleType=Enum.ScaleType.Fit,BackgroundTransparency=1,
+  BorderSizePixel=0,AnchorPoint=Vector2.new(0,.5),Position=UDim2.new(0,8,.5,0),Size=UDim2.fromOffset(14,14)},DiscordPill)
+ label(DiscordPill,invite,UDim2.new(0,27,0,0),UDim2.new(1,-32,1,0),11,T.White,T.Font)
+ local Discord=N("TextButton",{Text="",BackgroundTransparency=1,BorderSizePixel=0,Size=UDim2.fromScale(1,1),AutoButtonColor=false},DiscordPill)
+ local Min=C(N("TextButton",{Text="-",Position=UDim2.new(1,-62,.5,-12),Size=UDim2.fromOffset(25,25),
+  BackgroundColor3=T.Surface2,BackgroundTransparency=.22,TextColor3=T.White,Font=T.Font,TextSize=16,BorderSizePixel=0,ZIndex=52},Header),5)
+ local Close=C(N("TextButton",{Text="X",Position=UDim2.new(1,-31,.5,-12),Size=UDim2.fromOffset(25,25),
+  BackgroundColor3=T.Surface2,BackgroundTransparency=.22,TextColor3=T.White,Font=T.Font,TextSize=14,BorderSizePixel=0,ZIndex=52},Header),5)
+ N("Frame",{Position=UDim2.new(0,8,0,HEADER),Size=UDim2.new(1,-16,0,1),BackgroundColor3=T.Red,BackgroundTransparency=.42,BorderSizePixel=0},Main)
 
-local function textLabel(parent, text, position, size, textSize, color, font, alignment)
-    return new("TextLabel", {
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Text = tostring(text or ""),
-        Position = position,
-        Size = size,
-        TextColor3 = color or Theme.White,
-        Font = font or Theme.Body,
-        TextSize = textSize or 10,
-        TextXAlignment = alignment or Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Center,
-    }, parent)
-end
+ local Body=N("Frame",{Position=UDim2.new(0,GAP,0,HEADER+GAP),Size=UDim2.new(1,-GAP*2,1,-HEADER-GAP*2),BackgroundTransparency=1},Main)
+ local Side=panel(Body,UDim2.new(0,0,0,0),UDim2.new(0,SIDE,1,0))
+ local Nav=N("Frame",{Position=UDim2.fromOffset(6,42),Size=UDim2.new(1,-12,1,-49),BackgroundTransparency=1},Side)
+ N("UIListLayout",{Padding=UDim.new(0,2)},Nav)
 
-local function gradient(object, a, b, rotation)
-    return new("UIGradient", {
-        Color = ColorSequence.new(a, b),
-        Rotation = rotation or 20,
-    }, object)
-end
+ local Pages,NavData,Tabs,Order={},{},{},{}
+ local active=nil
+ local window={ScreenGui=SG,Holder=Holder,Main=Main,Header=Header,Body=Body,Side=Side,Stars=stars,
+  Pages=Pages,Tabs=Tabs,Closed=false,NotificationsEnabled=true,TooltipsEnabled=false}
+ Library._LastWindow=window
 
-local function panel(parent, position, size, title)
-    local frame = corner(new("Frame", {
-        Position = position,
-        Size = size,
-        BackgroundColor3 = Theme.Panel,
-        BackgroundTransparency = 0.12,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-    }, parent), 7)
+ local function page(name)
+  local p=N("Frame",{Name=name,Position=UDim2.new(0,SIDE+GAP,0,0),Size=UDim2.new(1,-SIDE-GAP,1,0),
+   BackgroundTransparency=1,Visible=false},Body)
+  Pages[name]=p;return p
+ end
+ local function open(name)
+  active=name
+  for n,p in pairs(Pages) do p.Visible=n==name end
+  for n,d in pairs(NavData) do
+   local on=n==name;d.bar.Visible=on
+   tw(d.b,{BackgroundTransparency=on and .28 or 1})
+   tw(d.t,{TextColor3=on and T.Text or T.White})
+   tw(d.icon,{BackgroundColor3=on and T.Red or T.Surface2})
+  end
+ end
+ function window:SelectTab(name) open(name) end
 
-    gradient(
-        frame,
-        Color3.fromRGB(43, 17, 24),
-        Color3.fromRGB(18, 8, 12),
-        20
-    )
+ local function nav(name,iconImage)
+  local b=C(N("TextButton",{Size=UDim2.new(1,0,0,35),BackgroundColor3=T.Surface2,BackgroundTransparency=1,
+   BorderSizePixel=0,Text="",AutoButtonColor=false,LayoutOrder=#Order+1},Nav),5)
+  local bar=C(N("Frame",{Position=UDim2.new(0,0,.5,-12),Size=UDim2.fromOffset(3,24),BackgroundColor3=T.Red,BorderSizePixel=0,Visible=false},b),2)
+  local ib=C(N("Frame",{Position=UDim2.new(0,6,.5,-13),Size=UDim2.fromOffset(27,27),BackgroundColor3=T.Surface2,BorderSizePixel=0},b),5)
+  S(ib,T.Stroke,.75)
+  N("ImageLabel",{Name="Icon",Image=iconImage or "",ImageColor3=Color3.fromRGB(255,255,255),ScaleType=Enum.ScaleType.Fit,
+   BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.fromOffset(5,5),Size=UDim2.fromOffset(17,17)},ib)
+  local tx=label(b,string.upper(name),UDim2.new(0,39,0,0),UDim2.new(1,-44,1,0),10,T.White,T.Font)
+  NavData[name]={b=b,bar=bar,icon=ib,t=tx}
+  own(b.Activated:Connect(function() open(name) end))
+ end
 
-    stroke(frame, Theme.Line, 0.22, 1.1)
+ function window:AddTab(c)
+  if type(c)=="string" then c={Name=c} else c=c or {} end
+  local name=tostring(c.Name or ("Tab "..tostring(#Order+1)))
+  if Tabs[name] then return Tabs[name] end
+  local P=page(name);nav(name,c.Icon);Order[#Order+1]=name
+  local tab={Name=name,Page=P,Title=c.Title or string.upper(name),Status=c.Status or "",Built=false,Sections={},Y={Left=0,Right=0},SearchItems={}}
+  Tabs[name]=tab
 
-    if title then
-        textLabel(
-            frame,
-            title,
-            UDim2.new(0, 9, 0, 5),
-            UDim2.new(1, -18, 0, 14),
-            10,
-            Theme.Text,
-            Theme.Font
-        )
+  function tab:SetStatus(text,good)
+   self.Status=tostring(text or "")
+   if self.StatusLabel then self.StatusLabel.Text=self.Status
+    self.StatusLabel.TextColor3=good==true and T.Success or good==false and T.Red or T.Muted end
+  end
+
+  function tab:_build()
+   if self.Built then return end;self.Built=true
+   self.TitleLabel=label(P,self.Title,UDim2.new(0,8,0,1),UDim2.new(.5,0,0,20),11,T.Text,T.Font)
+   self.StatusLabel=label(P,self.Status,UDim2.new(.5,0,0,1),UDim2.new(.5,-8,0,20),10,T.Success,T.Font,Enum.TextXAlignment.Right)
+   self.Scroll=N("ScrollingFrame",{Name=name.."Scroll",Position=UDim2.new(0,0,0,24),Size=UDim2.new(1,-8,1,-24),
+    BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),ScrollBarThickness=4,ScrollBarImageColor3=T.Red,
+    ClipsDescendants=true},P)
+  end
+  function tab:_reflow()
+   if not self.Built then return end
+   local y={Left=0,Right=0}
+   for _,s in ipairs(self.Sections) do
+    local right=s.Column=="Right";local py=y[s.Column]
+    s.Card.Position=right and UDim2.new(.5,4,0,py) or UDim2.new(0,1,0,py)
+    s.Card.Size=UDim2.new(.5,-5,0,s.Height)
+    y[s.Column]=py+s.Height+10
+   end
+   self.Y=y;self.Scroll.CanvasSize=UDim2.new(0,0,0,math.max(y.Left,y.Right)+2)
+  end
+
+  function tab:AddSection(sc)
+   self:_build();if type(sc)=="string" then sc={Title=sc} else sc=sc or {} end
+   local col=string.lower(tostring(sc.Column or (self.Y.Left<=self.Y.Right and "Left" or "Right")))=="right" and "Right" or "Left"
+   local card=panel(self.Scroll,UDim2.new(),UDim2.new(.5,-5,0,60),string.upper(tostring(sc.Title or "SECTION")))
+   N("Frame",{BackgroundColor3=T.Line,BackgroundTransparency=.55,BorderSizePixel=0,Position=UDim2.new(0,10,0,21),Size=UDim2.new(1,-20,0,1)},card)
+   if sc.Badge then
+    local bc=sc.BadgeColor or T.RedDark
+    local b=C(N("Frame",{BackgroundColor3=bc,BorderSizePixel=0,Position=UDim2.new(1,-88,0,6),Size=UDim2.fromOffset(78,15)},card),999)
+    S(b,bc,.45,1);label(b,tostring(sc.Badge),UDim2.new(),UDim2.fromScale(1,1),8,T.White,T.Font,Enum.TextXAlignment.Center)
+   end
+   local sec={Card=card,Column=col,Height=60,Y=28,Tab=self};self.Sections[#self.Sections+1]=sec
+   local function grow() sec.Height=math.max(60,sec.Y+8);tab:_reflow() end
+   local function search(t,target) tab.SearchItems[#tab.SearchItems+1]={Title=t,Target=target} end
+
+   function sec:AddToggle(x)
+    x=x or {};local y=self.Y;local title=tostring(x.Title or "Toggle")
+    label(card,title,UDim2.new(0,10,0,y),UDim2.new(1,-82,0,14),11,T.White,T.Font)
+    if x.Content and tostring(x.Content)~="" then label(card,x.Content,UDim2.new(0,10,0,y+14),UDim2.new(1,-82,0,13),9,T.Muted,T.Body) end
+    local state=x.Default==true
+    local b=C(N("TextButton",{Text="",BackgroundColor3=state and T.Success or T.RedDark,BorderSizePixel=0,AutoButtonColor=false,
+     Position=UDim2.new(1,-58,0,y+2),Size=UDim2.fromOffset(48,23)},card),12)
+    local k=C(N("Frame",{BackgroundColor3=T.White,BorderSizePixel=0,AnchorPoint=Vector2.new(0,.5),
+     Position=state and UDim2.new(1,-20,.5,0) or UDim2.new(0,3,.5,0),Size=UDim2.fromOffset(17,17)},b),10)
+    local api={}
+    function api:Set(v,fire) state=v==true;b.BackgroundColor3=state and T.Success or T.RedDark
+     tw(k,{Position=state and UDim2.new(1,-20,.5,0) or UDim2.new(0,3,.5,0)},.15)
+     if fire~=false and type(x.Callback)=="function" then x.Callback(state) end end
+    function api:Get() return state end
+    own(b.Activated:Connect(function() api:Set(not state) end))
+    self.Y=y+((x.Content and tostring(x.Content)~="") and 38 or 34);grow();search(title,b);return api
+   end
+
+   function sec:AddButton(x)
+    x=x or {};local y=self.Y;local title=tostring(x.Title or "Action")
+    label(card,title,UDim2.new(0,10,0,y+5),UDim2.new(1,-125,0,18),11,T.White,T.Font)
+    local b=C(N("TextButton",{Text=x.ButtonText or "RUN",Position=UDim2.new(1,-110,0,y+1),Size=UDim2.fromOffset(100,27),
+     BackgroundColor3=x.Color or T.RedDark,BorderSizePixel=0,AutoButtonColor=false,TextColor3=T.White,Font=T.Font,TextSize=10},card),5)
+    S(b,T.Red,.45,1)
+    own(b.MouseEnter:Connect(function() tw(b,{BackgroundColor3=T.Red},.1) end))
+    own(b.MouseLeave:Connect(function() tw(b,{BackgroundColor3=x.Color or T.RedDark},.1) end))
+    own(b.Activated:Connect(function() if type(x.Callback)=="function" then x.Callback() end end))
+    local api={Button=b};function api:SetText(v)b.Text=tostring(v or "")end
+    self.Y=y+36;grow();search(title,b);return api
+   end
+
+   function sec:AddInput(x)
+    x=x or {};local y=self.Y;local title=tostring(x.Title or "Input")
+    label(card,title,UDim2.new(0,10,0,y),UDim2.new(1,-20,0,14),10,T.Muted,T.Font)
+    local b=C(N("TextBox",{Text=tostring(x.Default or ""),PlaceholderText=x.Placeholder or "Input value",ClearTextOnFocus=false,
+     Font=T.Font,TextSize=11,TextColor3=T.White,PlaceholderColor3=T.Muted,TextXAlignment=Enum.TextXAlignment.Left,
+     BackgroundColor3=T.Input,BorderSizePixel=0,Position=UDim2.new(0,10,0,y+17),Size=UDim2.new(1,-20,0,27)},card),5)
+    N("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8)},b);S(b,T.Stroke,.82,1)
+    own(b.FocusLost:Connect(function(e) if type(x.Callback)=="function" then x.Callback(b.Text,b,e) end end))
+    local api={Box=b};function api:Set(v,fire)b.Text=tostring(v or "");if fire==true and type(x.Callback)=="function" then x.Callback(b.Text,b,false) end end
+    function api:Get()return b.Text end
+    self.Y=y+52;grow();search(title,b);return api
+   end
+
+   function sec:AddDropdown(x)
+    x=x or {};local y=self.Y;local title=tostring(x.Title or "Dropdown")
+    label(card,title,UDim2.new(0,10,0,y),UDim2.new(1,-20,0,14),10,T.Muted,T.Font)
+    local selector=C(N("TextButton",{Text="",Font=T.Body,TextSize=11,TextColor3=T.White,TextXAlignment=Enum.TextXAlignment.Left,
+     TextTruncate=Enum.TextTruncate.AtEnd,BackgroundColor3=T.Input,BorderSizePixel=0,AutoButtonColor=false,
+     Position=UDim2.new(0,10,0,y+17),Size=UDim2.new(1,-20,0,27),ClipsDescendants=true,ZIndex=5},card),5)
+    S(selector,T.Stroke,.82,1)
+    local multi=x.Multi==true;local options=norm(x.Options or {});local selected=norm(x.Default or {})
+    if not multi and #selected>1 then selected={selected[1]} end
+    local empty=x.EmptyText or x.Placeholder or "Select options..."
+    local st=N("TextLabel",{Text=fmt(selected,empty),Font=T.Body,TextSize=12,TextColor3=T.White,TextXAlignment=Enum.TextXAlignment.Left,
+     TextTruncate=Enum.TextTruncate.AtEnd,BackgroundTransparency=1,Position=UDim2.new(0,8,0,0),Size=UDim2.new(1,-28,1,0),ZIndex=6},selector)
+    local ch=N("Frame",{BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.new(1,-20,.5,-5),Size=UDim2.fromOffset(14,10),ZIndex=6},selector)
+    N("Frame",{BackgroundColor3=T.Muted,BorderSizePixel=0,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,-2,.5,0),Size=UDim2.fromOffset(7,2),Rotation=45,ZIndex=7},ch)
+    N("Frame",{BackgroundColor3=T.Muted,BorderSizePixel=0,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,2,.5,0),Size=UDim2.fromOffset(7,2),Rotation=-45,ZIndex=7},ch)
+    local pop=C(N("Frame",{Visible=false,BackgroundColor3=T.Surface2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=800},P),6);S(pop,T.Red,.05,1.4)
+    local sb=C(N("TextBox",{Text="",PlaceholderText="Search...",Font=T.Body,TextSize=11,TextColor3=T.White,PlaceholderColor3=T.Muted,
+     BackgroundColor3=T.Input,BorderSizePixel=0,ClearTextOnFocus=false,Position=UDim2.new(0,8,0,8),Size=UDim2.new(1,-16,0,27),ZIndex=801},pop),5)
+    N("UIPadding",{PaddingLeft=UDim.new(0,8)},sb)
+    local acts=N("Frame",{BackgroundTransparency=1,Position=UDim2.new(0,8,0,42),Size=UDim2.new(1,-16,0,24),Visible=multi,ZIndex=801},pop)
+    local all=btn(acts,"SELECT ALL",UDim2.new(),UDim2.new(.5,-4,1,0),T.RedDark);all.ZIndex=802
+    local clear=btn(acts,"CLEAR ALL",UDim2.new(.5,4,0,0),UDim2.new(.5,-4,1,0),T.Surface3);clear.ZIndex=802
+    local scroll=N("ScrollingFrame",{BackgroundColor3=T.Bg,BackgroundTransparency=.08,BorderSizePixel=0,
+     Position=UDim2.new(0,8,0,multi and 73 or 42),Size=UDim2.new(1,-16,1,multi and -81 or -50),
+     CanvasSize=UDim2.new(),ScrollBarThickness=4,ScrollBarImageColor3=T.Red,ZIndex=801},pop);C(scroll,5)
+    local lay=N("UIListLayout",{Padding=UDim.new(0,3),SortOrder=Enum.SortOrder.LayoutOrder},scroll)
+    local api={};local rows={}
+    local function fire() if type(x.Callback)=="function" then x.Callback(multi and norm(selected) or selected[1]) end end
+    local function upd()st.Text=fmt(selected,empty)end
+    local function rebuild()
+     for _,c in ipairs(rows) do if c.Parent then c:Destroy() end end;table.clear(rows)
+     local q=string.lower(sb.Text or "");local n=0
+     for _,o in ipairs(options) do if q=="" or string.find(string.lower(o),q,1,true) then
+      n+=1;local on=has(selected,o)
+      local r=C(N("TextButton",{Text="",BackgroundColor3=on and Color3.fromRGB(56,25,32) or T.Surface3,BorderSizePixel=0,
+       AutoButtonColor=false,Size=UDim2.new(1,-4,0,28),LayoutOrder=n,ZIndex=802},scroll),4);rows[#rows+1]=r
+      label(r,on and "✓" or "",UDim2.new(0,6,0,0),UDim2.fromOffset(18,28),12,T.Success,T.Font,Enum.TextXAlignment.Center).ZIndex=803
+      label(r,o,UDim2.new(0,30,0,0),UDim2.new(1,-35,1,0),10,T.White,T.Body).ZIndex=803
+      own(r.Activated:Connect(function()
+       if multi then
+        if has(selected,o) then local z={} for _,v in ipairs(selected) do if v~=o then z[#z+1]=v end end selected=z else selected[#selected+1]=o end
+        upd();rebuild();fire()
+       else selected={o};upd();fire();pop.Visible=false;tw(ch,{Rotation=0},.14) end
+      end))
+     end end
+     scroll.CanvasSize=UDim2.new(0,0,0,lay.AbsoluteContentSize.Y+4)
     end
-
-    return frame
-end
-
-local function getGuiParent()
-    local guiParent
-
-    if type(gethui) == "function" then
-        pcall(function()
-            guiParent = gethui()
-        end)
+    function api:Open()
+     local a=selector.AbsolutePosition;local p=P.AbsolutePosition
+     local w=math.max(180,selector.AbsoluteSize.X);local h=(multi and 81 or 50)+math.max(1,math.min(#options,6))*31
+     pop.Position=UDim2.fromOffset(a.X-p.X,a.Y-p.Y+selector.AbsoluteSize.Y+4);pop.Size=UDim2.fromOffset(w,math.min(h,260))
+     sb.Text="";rebuild();pop.Visible=true;tw(ch,{Rotation=180},.14)
     end
-
-    if not guiParent then
-        guiParent = LocalPlayer:WaitForChild("PlayerGui")
-    end
-
-    return guiParent
-end
-
-local function normalizeList(value)
-    local output = {}
-
-    if type(value) ~= "table" then
-        if value ~= nil then
-            output[1] = tostring(value)
-        end
-
-        return output
-    end
-
-    if #value > 0 then
-        for _, item in ipairs(value) do
-            output[#output + 1] = tostring(item)
-        end
-    else
-        for item, enabled in pairs(value) do
-            if enabled then
-                output[#output + 1] = tostring(item)
-            end
-        end
-    end
-
-    return output
-end
-
-local function listContains(list, value)
-    for _, item in ipairs(list or {}) do
-        if item == value then
-            return true
-        end
-    end
-
-    return false
-end
-
-local function formatSelection(values, emptyText)
-    values = normalizeList(values)
-
-    if #values == 0 then
-        return emptyText or "Select options..."
-    end
-
-    if #values == 1 then
-        return values[1]
-    end
-
-    if #values == 2 then
-        return values[1] .. ", " .. values[2]
-    end
-
-    return values[1] .. ", " .. values[2] .. " +" .. tostring(#values - 2)
-end
-
-local function makeChevron(parent)
-    local root = new("Frame", {
-        Name = "Chevron",
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Position = UDim2.new(1, -20, 0.5, -5),
-        Size = UDim2.fromOffset(14, 10),
-        ZIndex = 7,
-    }, parent)
-
-    new("Frame", {
-        BackgroundColor3 = Theme.Muted,
-        BorderSizePixel = 0,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, -2, 0.5, 0),
-        Size = UDim2.fromOffset(7, 2),
-        Rotation = 45,
-        ZIndex = 8,
-    }, root)
-
-    new("Frame", {
-        BackgroundColor3 = Theme.Muted,
-        BorderSizePixel = 0,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, 2, 0.5, 0),
-        Size = UDim2.fromOffset(7, 2),
-        Rotation = -45,
-        ZIndex = 8,
-    }, root)
-
-    return root
-end
-
---------------------------------------------------
--- WINDOW
---------------------------------------------------
-
-function Library:CreateWindow(config)
-    config = config or {}
-
-    local guiName = config.GuiName or "ScoopHubV2Library"
-    local guiParent = getGuiParent()
-
-    -- Only remove this library's exact GUI name.
-    local old = guiParent:FindFirstChild(guiName)
-
-    if old then
-        old:Destroy()
-    end
-
-    local width = tonumber(config.Width) or DEFAULT_WIDTH
-    local height = tonumber(config.Height) or DEFAULT_HEIGHT
-
-    local screenGui = new("ScreenGui", {
-        Name = guiName,
-        ResetOnSpawn = false,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        IgnoreGuiInset = false,
-    }, guiParent)
-
-    local holder = new("Frame", {
-        Name = "Holder",
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.fromOffset(width, height),
-        BackgroundTransparency = 1,
-    }, screenGui)
-
-    local scale = new("UIScale", {
-        Scale = 1,
-    }, holder)
-
-    local shadow = new("ImageLabel", {
-        Name = "Shadow",
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://6015897843",
-        ImageColor3 = Color3.fromRGB(4, 5, 8),
-        ImageTransparency = 0.38,
-        ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(49, 49, 450, 450),
-    }, holder)
-
-    local main = corner(new("Frame", {
-        Name = "Main",
-        Size = UDim2.fromScale(1, 1),
-        BackgroundColor3 = Theme.Bg,
-        BackgroundTransparency = 0.04,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-    }, shadow), 8)
-
-    stroke(main, Theme.Stroke, 0.86, 1)
-
-    new("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Theme.Top),
-            ColorSequenceKeypoint.new(0.52, Theme.Mid),
-            ColorSequenceKeypoint.new(1, Theme.Low),
-        }),
-        Rotation = 16,
-    }, main)
-
-    --------------------------------------------------
-    -- DECORATIVE BACKGROUND DOTS / STARS
-    -- Same density, colors, size, and transparency as ScoopHub V2.2.
-    --------------------------------------------------
-
-    local decorativeStars = new("Frame", {
-        Name = "ScoopHubDecorativeStars",
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 1,
-    }, main)
-
-    local starRandom =
-        Random.new(LocalPlayer.UserId)
-
-    local starColors = {
-        Color3.fromRGB(255, 218, 218),
-        Color3.fromRGB(246, 141, 151),
-        Color3.fromRGB(255, 205, 156),
-    }
-
-    for _ = 1, 80 do
-        local dotSize =
-            starRandom:NextNumber() > 0.8
-            and 2
-            or 1
-
-        corner(new("Frame", {
-            Name = "MainStar",
-            Position = UDim2.fromScale(
-                starRandom:NextNumber(0.01, 0.99),
-                starRandom:NextNumber(0.02, 0.98)
-            ),
-            Size = UDim2.fromOffset(
-                dotSize,
-                dotSize
-            ),
-            BackgroundColor3 =
-                starColors[
-                    starRandom:NextInteger(
-                        1,
-                        #starColors
-                    )
-                ],
-            BackgroundTransparency =
-                starRandom:NextNumber(
-                    0.45,
-                    0.78
-                ),
-            BorderSizePixel = 0,
-            ZIndex = 1,
-        }, decorativeStars), 20)
-    end
-
-    --------------------------------------------------
-    -- RESPONSIVE SCALE
-    --------------------------------------------------
-
-    local isMobile =
-        UserInputService.TouchEnabled
-        and (
-            not UserInputService.KeyboardEnabled
-            or not UserInputService.MouseEnabled
-        )
-
-    local function resize()
-        local camera = workspace.CurrentCamera
-
-        if not camera then
-            return
-        end
-
-        local viewport = camera.ViewportSize
-        local baseScale = math.min(
-            (viewport.X - 24) / width,
-            (viewport.Y - 24) / height
-        )
-
-        if isMobile then
-            scale.Scale = math.clamp(baseScale * 0.80, 0.45, 0.80)
-        else
-            scale.Scale = math.clamp(baseScale, 0.55, 1)
-        end
-    end
-
-    resize()
-
-    local connections = {}
-
-    local function track(connection)
-        if connection then
-            connections[#connections + 1] = connection
-        end
-
-        return connection
-    end
-
-    track(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(resize))
-
-    task.defer(function()
-        if workspace.CurrentCamera then
-            track(
-                workspace.CurrentCamera
-                    :GetPropertyChangedSignal("ViewportSize")
-                    :Connect(resize)
-            )
-        end
-    end)
-
-    --------------------------------------------------
-    -- HEADER
-    --------------------------------------------------
-
-    local header = new("Frame", {
-        Name = "Header",
-        Size = UDim2.new(1, 0, 0, HEADER_HEIGHT),
-        BackgroundTransparency = 1,
-        Active = true,
-        ZIndex = 50,
-    }, main)
-
-    new("ImageLabel", {
-        Name = "Logo",
-        Image = config.Logo or "rbxassetid://90541504618217",
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 10, 0.5, -12),
-        Size = UDim2.fromOffset(24, 24),
-    }, header)
-
-    textLabel(
-        header,
-        config.Title or "SCOOPHUB",
-        UDim2.new(0, 40, 0, 5),
-        UDim2.fromOffset(82, 16),
-        14,
-        Color3.fromRGB(242, 92, 101),
-        Theme.Font
-    )
-
-    textLabel(
-        header,
-        "    " .. tostring(
-            config.Version or "V2.2"
-        ),
-        UDim2.new(0, 105, 0, 6),
-        UDim2.fromOffset(45, 13),
-        11,
-        Theme.Muted,
-        Theme.Body
-    )
-
-    textLabel(
-        header,
-        config.Subtitle or "by Scoop",
-        UDim2.new(0, 40, 0, 20),
-        UDim2.fromOffset(100, 13),
-        10,
-        Color3.fromRGB(166, 174, 187),
-        Theme.Body
-    )
-
-    local discordPill = corner(new("Frame", {
-        Name = "DiscordPill",
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.55, 0, 0.5, 0),
-        Size = UDim2.fromOffset(174, 22),
-        BackgroundColor3 = Theme.Surface3,
-        BackgroundTransparency = 0.08,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-    }, header), 11)
-
-    stroke(discordPill, Theme.Line, 0.62, 1)
-
-    new("ImageLabel", {
-        Name = "DiscordIcon",
-        Image = config.DiscordIcon or "rbxassetid://94434236999817",
-        ImageColor3 = Color3.fromRGB(255, 255, 255),
-        ScaleType = Enum.ScaleType.Fit,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        AnchorPoint = Vector2.new(0, 0.5),
-        Position = UDim2.new(0, 8, 0.5, 0),
-        Size = UDim2.fromOffset(14, 14),
-    }, discordPill)
-
-    local discordText = config.Discord or "discord.gg/WxgqUa9Qz"
-
-    textLabel(
-        discordPill,
-        discordText,
-        UDim2.new(0, 27, 0, 0),
-        UDim2.new(1, -32, 1, 0),
-        11,
-        Theme.White,
-        Theme.Font
-    )
-
-    local discordButton = new("TextButton", {
-        Name = "DiscordButton",
-        Text = "",
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Size = UDim2.fromScale(1, 1),
-        AutoButtonColor = false,
-    }, discordPill)
-
-    local minimizeButton = corner(new("TextButton", {
-        Name = "Minimize",
-        Text = "-",
-        Position = UDim2.new(1, -62, 0.5, -12),
-        Size = UDim2.fromOffset(25, 25),
-        BackgroundColor3 = Theme.Surface2,
-        BackgroundTransparency = 0.22,
-        TextColor3 = Theme.White,
-        Font = Theme.Font,
-        TextSize = 16,
-        BorderSizePixel = 0,
-        ZIndex = 52,
-        AutoButtonColor = false,
-    }, header), 5)
-
-    local closeButton = corner(new("TextButton", {
-        Name = "Close",
-        Text = "X",
-        Position = UDim2.new(1, -31, 0.5, -12),
-        Size = UDim2.fromOffset(25, 25),
-        BackgroundColor3 = Theme.Surface2,
-        BackgroundTransparency = 0.22,
-        TextColor3 = Theme.White,
-        Font = Theme.Font,
-        TextSize = 14,
-        BorderSizePixel = 0,
-        ZIndex = 52,
-        AutoButtonColor = false,
-    }, header), 5)
-
-    new("Frame", {
-        Position = UDim2.new(0, 8, 0, HEADER_HEIGHT),
-        Size = UDim2.new(1, -16, 0, 1),
-        BackgroundColor3 = Theme.Red,
-        BackgroundTransparency = 0.42,
-        BorderSizePixel = 0,
-    }, main)
-
-    --------------------------------------------------
-    -- BODY / SIDEBAR
-    --------------------------------------------------
-
-    local body = new("Frame", {
-        Name = "Body",
-        Position = UDim2.new(0, GAP, 0, HEADER_HEIGHT + GAP),
-        Size = UDim2.new(1, -GAP * 2, 1, -HEADER_HEIGHT - GAP * 2),
-        BackgroundTransparency = 1,
-        ClipsDescendants = false,
-    }, main)
-
-    local side = panel(
-        body,
-        UDim2.new(0, 0, 0, 0),
-        UDim2.new(0, SIDEBAR_WIDTH, 1, 0)
-    )
-
-    local searchBox = corner(new("TextBox", {
-        Name = "TabSearch",
-        Position = UDim2.fromOffset(6, 7),
-        Size = UDim2.new(1, -12, 0, 29),
-        BackgroundColor3 = Theme.Surface3,
-        BackgroundTransparency = 0.04,
-        BorderSizePixel = 0,
-        Text = "",
-        PlaceholderText = config.SearchPlaceholder or "Search...",
-        PlaceholderColor3 = Theme.Muted,
-        TextColor3 = Theme.White,
-        Font = Theme.Body,
-        TextSize = 10,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ClearTextOnFocus = false,
-        ZIndex = 410,
-    }, side), 5)
-
-    stroke(searchBox, Theme.Line, 0.55, 1)
-
-    new("UIPadding", {
-        PaddingLeft = UDim.new(0, 9),
-        PaddingRight = UDim.new(0, 7),
-    }, searchBox)
-
-    local nav = new("ScrollingFrame", {
-        Name = "Navigation",
-        Position = UDim2.fromOffset(6, 42),
-        Size = UDim2.new(1, -12, 1, -49),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        ScrollBarThickness = 2,
-        ScrollBarImageColor3 = Theme.Red,
-    }, side)
-
-    local navLayout = new("UIListLayout", {
-        Padding = UDim.new(0, 2),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-    }, nav)
-
-    local pages = {}
-    local tabs = {}
-    local tabOrder = {}
-    local activeTab = nil
-    local activeDropdown = nil
-
-    --------------------------------------------------
-    -- TAB SEARCH
-    --------------------------------------------------
-
-    local function updateNavCanvas()
-        nav.CanvasSize = UDim2.new(
-            0,
-            0,
-            0,
-            navLayout.AbsoluteContentSize.Y + 4
-        )
-    end
-
-    track(navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateNavCanvas))
-
-    local function filterTabs()
-        local query = string.lower(searchBox.Text or "")
-
-        for _, name in ipairs(tabOrder) do
-            local tab = tabs[name]
-
-            if tab and tab.NavButton then
-                tab.NavButton.Visible =
-                    query == ""
-                    or string.find(
-                        string.lower(name),
-                        query,
-                        1,
-                        true
-                    ) ~= nil
-            end
-        end
-
-        task.defer(updateNavCanvas)
-    end
-
-    track(searchBox:GetPropertyChangedSignal("Text"):Connect(filterTabs))
-
-    --------------------------------------------------
-    -- ACTIVE DROPDOWN
-    --------------------------------------------------
-
-    local function closeActiveDropdown()
-        if activeDropdown and activeDropdown.Close then
-            activeDropdown:Close()
-        end
-
-        activeDropdown = nil
-    end
-
-    --------------------------------------------------
-    -- WINDOW OBJECT
-    --------------------------------------------------
-
-    local window = {
-        ScreenGui = screenGui,
-        Holder = holder,
-        Main = main,
-        Header = header,
-        Body = body,
-        Sidebar = side,
-        SearchBox = searchBox,
-        Tabs = tabs,
-        Theme = Theme,
-        Closed = false,
-    }
-
-    --------------------------------------------------
-    -- TAB SWITCHING
-    --------------------------------------------------
-
-    local function openTab(name)
-        if not pages[name] then
-            return
-        end
-
-        closeActiveDropdown()
-        activeTab = name
-
-        for tabName, page in pairs(pages) do
-            page.Visible = tabName == name
-        end
-
-        for tabName, tab in pairs(tabs) do
-            local enabled = tabName == name
-
-            tab.ActiveBar.Visible = enabled
-
-            tween(tab.NavButton, {
-                BackgroundTransparency = enabled and 0.28 or 1,
-            })
-
-            tween(tab.NavText, {
-                TextColor3 = enabled and Theme.Text or Theme.White,
-            })
-
-            tween(tab.IconBackground, {
-                BackgroundColor3 = enabled and Theme.Red or Theme.Surface2,
-            })
-        end
-    end
-
-    function window:SelectTab(name)
-        openTab(name)
-    end
-
-    --------------------------------------------------
-    -- ADD TAB
-    --------------------------------------------------
-
-    function window:AddTab(tabConfig)
-        if type(tabConfig) == "string" then
-            tabConfig = {
-                Name = tabConfig,
-            }
-        else
-            tabConfig = tabConfig or {}
-        end
-
-        local name = tostring(tabConfig.Name or ("Tab " .. tostring(#tabOrder + 1)))
-
-        if tabs[name] then
-            return tabs[name]
-        end
-
-        local navButton = corner(new("TextButton", {
-            Name = "Nav_" .. name,
-            Size = UDim2.new(1, 0, 0, 35),
-            BackgroundColor3 = Theme.Surface2,
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            Text = "",
-            AutoButtonColor = false,
-            LayoutOrder = #tabOrder + 1,
-        }, nav), 5)
-
-        local activeBar = corner(new("Frame", {
-            Position = UDim2.new(0, 0, 0.5, -12),
-            Size = UDim2.fromOffset(3, 24),
-            BackgroundColor3 = Theme.Red,
-            BorderSizePixel = 0,
-            Visible = false,
-        }, navButton), 2)
-
-        local iconBackground = corner(new("Frame", {
-            Position = UDim2.new(0, 6, 0.5, -13),
-            Size = UDim2.fromOffset(27, 27),
-            BackgroundColor3 = Theme.Surface2,
-            BorderSizePixel = 0,
-        }, navButton), 5)
-
-        stroke(iconBackground, Theme.Stroke, 0.75, 1)
-
-        new("ImageLabel", {
-            Name = "Icon",
-            Image = tabConfig.Icon or "",
-            ImageColor3 = Color3.fromRGB(255, 255, 255),
-            ScaleType = Enum.ScaleType.Fit,
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            Position = UDim2.fromOffset(5, 5),
-            Size = UDim2.fromOffset(17, 17),
-        }, iconBackground)
-
-        local navText = textLabel(
-            navButton,
-            string.upper(name),
-            UDim2.new(0, 39, 0, 0),
-            UDim2.new(1, -44, 1, 0),
-            10,
-            Theme.White,
-            Theme.Font
-        )
-
-        local page = new("Frame", {
-            Name = name,
-            Position = UDim2.new(0, SIDEBAR_WIDTH + GAP, 0, 0),
-            Size = UDim2.new(1, -SIDEBAR_WIDTH - GAP, 1, 0),
-            BackgroundTransparency = 1,
-            Visible = false,
-            ClipsDescendants = true,
-        }, body)
-
-        local titleLabel = textLabel(
-            page,
-            string.upper(tabConfig.Title or name),
-            UDim2.new(0, 8, 0, 1),
-            UDim2.new(0.52, 0, 0, 20),
-            11,
-            Theme.Text,
-            Theme.Font
-        )
-
-        local statusLabel = textLabel(
-            page,
-            tabConfig.Status or "",
-            UDim2.new(0.52, 0, 0, 1),
-            UDim2.new(0.48, -8, 0, 20),
-            9,
-            Theme.Success,
-            Theme.Font,
-            Enum.TextXAlignment.Right
-        )
-
-        titleLabel.ZIndex = 20
-        statusLabel.ZIndex = 20
-
-        local scroll = new("ScrollingFrame", {
-            Name = "ContentScroll",
-            Position = UDim2.new(0, 0, 0, 24),
-            Size = UDim2.new(1, -4, 1, -24),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            CanvasSize = UDim2.new(0, 0, 0, 0),
-            ScrollBarThickness = 4,
-            ScrollBarImageColor3 = Theme.Red,
-            ScrollingDirection = Enum.ScrollingDirection.Y,
-            ClipsDescendants = true,
-            ZIndex = 10,
-        }, page)
-
-        local leftColumn = new("Frame", {
-            Name = "LeftColumn",
-            Position = UDim2.new(0, 4, 0, 4),
-            Size = UDim2.new(0.5, -8, 0, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            AutomaticSize = Enum.AutomaticSize.Y,
-        }, scroll)
-
-        local rightColumn = new("Frame", {
-            Name = "RightColumn",
-            Position = UDim2.new(0.5, 4, 0, 4),
-            Size = UDim2.new(0.5, -8, 0, 0),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            AutomaticSize = Enum.AutomaticSize.Y,
-        }, scroll)
-
-        local leftLayout = new("UIListLayout", {
-            Padding = UDim.new(0, 8),
-            SortOrder = Enum.SortOrder.LayoutOrder,
-        }, leftColumn)
-
-        local rightLayout = new("UIListLayout", {
-            Padding = UDim.new(0, 8),
-            SortOrder = Enum.SortOrder.LayoutOrder,
-        }, rightColumn)
-
-        local tab = {
-            Name = name,
-            Page = page,
-            Scroll = scroll,
-            LeftColumn = leftColumn,
-            RightColumn = rightColumn,
-            LeftLayout = leftLayout,
-            RightLayout = rightLayout,
-            TitleLabel = titleLabel,
-            StatusLabel = statusLabel,
-            NavButton = navButton,
-            ActiveBar = activeBar,
-            IconBackground = iconBackground,
-            NavText = navText,
-            SectionCount = 0,
-            LeftSectionCount = 0,
-            RightSectionCount = 0,
-            ContentTopOffset = 4,
-            FixedContent = false,
-        }
-
-        pages[name] = page
-        tabs[name] = tab
-        tabOrder[#tabOrder + 1] = name
-
-        local function updateCanvas()
-            if tab.FixedContent then
-                scroll.CanvasSize =
-                    UDim2.new(0, 0, 0, 0)
-
-                scroll.CanvasPosition =
-                    Vector2.new(0, 0)
-
-                return
-            end
-
-            local leftHeight =
-                leftLayout.AbsoluteContentSize.Y
-
-            local rightHeight =
-                rightLayout.AbsoluteContentSize.Y
-
-            scroll.CanvasSize = UDim2.new(
-                0,
-                0,
-                0,
-                (tab.ContentTopOffset or 4)
-                    + math.max(
-                        leftHeight,
-                        rightHeight
-                    )
-                    + 8
-            )
-        end
-
-        track(leftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas))
-        track(rightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas))
-
-        function tab:SetStatus(text, mode)
-            statusLabel.Text = tostring(text or "")
-
-            if mode == "Success" or mode == true then
-                statusLabel.TextColor3 = Theme.Success
-            elseif mode == "Error" or mode == false then
-                statusLabel.TextColor3 = Theme.Red
-            else
-                statusLabel.TextColor3 = Theme.Muted
-            end
-        end
-
-        function tab:SetTitle(text)
-            titleLabel.Text = string.upper(tostring(text or name))
-        end
-
-        --------------------------------------------------
-        -- ADD SECTION / CARD
-        --------------------------------------------------
-
-        function tab:AddSection(sectionConfig, column)
-            if type(sectionConfig) == "string" then
-                sectionConfig = {
-                    Title = sectionConfig,
-                    Column = column,
-                }
-            else
-                sectionConfig = sectionConfig or {}
-            end
-
-            self.SectionCount += 1
-
-            local selectedColumn = sectionConfig.Column
-            local spanColumns =
-                tonumber(sectionConfig.Span) == 2
-                or selectedColumn == "Full"
-                or selectedColumn == "full"
-
-            if spanColumns then
-                selectedColumn = 1
-            elseif selectedColumn == nil then
-                selectedColumn =
-                    self.LeftLayout.AbsoluteContentSize.Y
-                        <= self.RightLayout.AbsoluteContentSize.Y
-                    and 1
-                    or 2
-            end
-
-            if selectedColumn == "Left" or selectedColumn == "left" then
-                selectedColumn = 1
-            elseif selectedColumn == "Right" or selectedColumn == "right" then
-                selectedColumn = 2
-            end
-
-            local parentColumn =
-                selectedColumn == 2
-                and self.RightColumn
-                or self.LeftColumn
-
-            if selectedColumn == 2 then
-                self.RightSectionCount += 1
-            else
-                self.LeftSectionCount += 1
-            end
-
-            local card = panel(
-                parentColumn,
-                UDim2.new(),
-                spanColumns
-                    and UDim2.new(2, 8, 0, 42)
-                    or UDim2.new(1, 0, 0, 42),
-                string.upper(tostring(sectionConfig.Title or "SECTION"))
-            )
-
-            card.LayoutOrder =
-                selectedColumn == 2
-                and self.RightSectionCount
-                or self.LeftSectionCount
-
-            if sectionConfig.Badge then
-                local badge = corner(new("Frame", {
-                    BackgroundColor3 = sectionConfig.BadgeColor or Theme.RedDark,
-                    BorderSizePixel = 0,
-                    Position = UDim2.new(1, -88, 0, 6),
-                    Size = UDim2.fromOffset(78, 15),
-                }, card), 999)
-
-                stroke(
-                    badge,
-                    sectionConfig.BadgeColor or Theme.Line,
-                    0.45,
-                    1
-                )
-
-                textLabel(
-                    badge,
-                    tostring(sectionConfig.Badge),
-                    UDim2.new(),
-                    UDim2.fromScale(1, 1),
-                    8,
-                    Theme.White,
-                    Theme.Font,
-                    Enum.TextXAlignment.Center
-                )
-            end
-
-            new("Frame", {
-                BackgroundColor3 = Theme.Line,
-                BackgroundTransparency = 0.55,
-                BorderSizePixel = 0,
-                Position = UDim2.new(0, 10, 0, 22),
-                Size = UDim2.new(1, -20, 0, 1),
-            }, card)
-
-            local content = new("Frame", {
-                Name = "Content",
-                Position = UDim2.new(0, 10, 0, 29),
-                Size = UDim2.new(1, -20, 0, 0),
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
-                AutomaticSize = Enum.AutomaticSize.Y,
-            }, card)
-
-            local contentLayout = new("UIListLayout", {
-                Padding = UDim.new(0, 8),
-                SortOrder = Enum.SortOrder.LayoutOrder,
-            }, content)
-
-            local section = {
-                Card = card,
-                Content = content,
-                Layout = contentLayout,
-                RowCount = 0,
-            }
-
-            local function updateCardHeight()
-                card.Size =
-                    spanColumns
-                    and UDim2.new(
-                        2,
-                        8,
-                        0,
-                        contentLayout.AbsoluteContentSize.Y + 38
-                    )
-                    or UDim2.new(
-                        1,
-                        0,
-                        0,
-                        contentLayout.AbsoluteContentSize.Y + 38
-                    )
-
-                task.defer(updateCanvas)
-            end
-
-            track(
-                contentLayout
-                    :GetPropertyChangedSignal("AbsoluteContentSize")
-                    :Connect(updateCardHeight)
-            )
-
-            local function createRow(height)
-                section.RowCount += 1
-
-                return new("Frame", {
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    Size = UDim2.new(1, 0, 0, height),
-                    LayoutOrder = section.RowCount,
-                }, content)
-            end
-
-            local function addTitleSubtitle(row, title, subtitle, reserveRight)
-                local right = reserveRight or 0
-
-                textLabel(
-                    row,
-                    title or "",
-                    UDim2.new(0, 0, 0, 0),
-                    UDim2.new(1, -right, 0, 16),
-                    10,
-                    Theme.White,
-                    Theme.Font
-                )
-
-                if subtitle and subtitle ~= "" then
-                    textLabel(
-                        row,
-                        subtitle,
-                        UDim2.new(0, 0, 0, 16),
-                        UDim2.new(1, -right, 0, 14),
-                        8,
-                        Theme.Muted,
-                        Theme.Body
-                    )
-                end
-            end
-
-            --------------------------------------------------
-            -- SUB SECTION
-            --------------------------------------------------
-
-            function section:AddSubSection(text)
-                local row = createRow(18)
-
-                textLabel(
-                    row,
-                    string.upper(tostring(text or "")),
-                    UDim2.new(),
-                    UDim2.fromScale(1, 1),
-                    9,
-                    Theme.Text,
-                    Theme.Font
-                )
-
-                return row
-            end
-
-            --------------------------------------------------
-            -- TOGGLE
-            --------------------------------------------------
-
-            function section:AddToggle(controlConfig)
-                controlConfig = controlConfig or {}
-
-                local row = createRow(34)
-
-                addTitleSubtitle(
-                    row,
-                    controlConfig.Title or "Toggle",
-                    controlConfig.Content or controlConfig.Subtitle,
-                    62
-                )
-
-                local state = controlConfig.Default == true
-
-                local button = corner(new("TextButton", {
-                    Text = "",
-                    BackgroundColor3 = state and Theme.Success or Theme.RedDark,
-                    BorderSizePixel = 0,
-                    AutoButtonColor = false,
-                    Position = UDim2.new(1, -48, 0, 5),
-                    Size = UDim2.fromOffset(44, 22),
-                }, row), 10)
-
-                local knob = corner(new("Frame", {
-                    BackgroundColor3 = Theme.White,
-                    BorderSizePixel = 0,
-                    AnchorPoint = Vector2.new(0, 0.5),
-                    Position =
-                        state
-                        and UDim2.new(1, -19, 0.5, 0)
-                        or UDim2.new(0, 3, 0.5, 0),
-                    Size = UDim2.fromOffset(16, 16),
-                }, button), 8)
-
-                local api = {}
-
-                function api:Set(value, fireCallback)
-                    state = value == true
-
-                    button.BackgroundColor3 =
-                        state
-                        and Theme.Success
-                        or Theme.RedDark
-
-                    tween(knob, {
-                        Position =
-                            state
-                            and UDim2.new(1, -19, 0.5, 0)
-                            or UDim2.new(0, 3, 0.5, 0),
-                    }, 0.12)
-
-                    if fireCallback ~= false
-                        and type(controlConfig.Callback) == "function"
-                    then
-                        controlConfig.Callback(state)
-                    end
-                end
-
-                function api:Get()
-                    return state
-                end
-
-                track(button.Activated:Connect(function()
-                    api:Set(not state, true)
-                end))
-
-                return api
-            end
-
-            --------------------------------------------------
-            -- INPUT
-            --------------------------------------------------
-
-            function section:AddInput(controlConfig)
-                controlConfig = controlConfig or {}
-
-                local row = createRow(50)
-
-                textLabel(
-                    row,
-                    controlConfig.Title or "Input",
-                    UDim2.new(),
-                    UDim2.new(1, 0, 0, 14),
-                    10,
-                    Theme.Muted,
-                    Theme.Font
-                )
-
-                local box = corner(new("TextBox", {
-                    Text = tostring(controlConfig.Default or ""),
-                    PlaceholderText = controlConfig.Placeholder or "Input value",
-                    ClearTextOnFocus = false,
-                    Font = Theme.Font,
-                    TextSize = 11,
-                    TextColor3 = Theme.White,
-                    PlaceholderColor3 = Theme.Muted,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    BackgroundColor3 = Theme.Input,
-                    BorderSizePixel = 0,
-                    Position = UDim2.new(0, 0, 0, 18),
-                    Size = UDim2.new(1, 0, 0, 29),
-                }, row), 5)
-
-                new("UIPadding", {
-                    PaddingLeft = UDim.new(0, 8),
-                    PaddingRight = UDim.new(0, 8),
-                }, box)
-
-                stroke(box, Theme.Stroke, 0.75, 1)
-
-                local api = {}
-
-                function api:Set(value, fireCallback)
-                    box.Text = tostring(value or "")
-
-                    if fireCallback == true
-                        and type(controlConfig.Callback) == "function"
-                    then
-                        controlConfig.Callback(box.Text, box)
-                    end
-                end
-
-                function api:Get()
-                    return box.Text
-                end
-
-                track(box.FocusLost:Connect(function(enterPressed)
-                    if type(controlConfig.Callback) == "function" then
-                        controlConfig.Callback(
-                            box.Text,
-                            box,
-                            enterPressed
-                        )
-                    end
-                end))
-
-                return api
-            end
-
-            --------------------------------------------------
-            -- BUTTON
-            --------------------------------------------------
-
-            function section:AddButton(controlConfig)
-                if type(controlConfig) == "string" then
-                    controlConfig = {
-                        Title = controlConfig,
-                    }
-                else
-                    controlConfig = controlConfig or {}
-                end
-
-                local row = createRow(
-                    controlConfig.Content and 45 or 32
-                )
-
-                if controlConfig.Content then
-                    addTitleSubtitle(
-                        row,
-                        controlConfig.Title or "Button",
-                        controlConfig.Content,
-                        110
-                    )
-                end
-
-                local button
-
-                if controlConfig.Content then
-                    button = corner(new("TextButton", {
-                        Text = controlConfig.ButtonText or "RUN",
-                        Font = Theme.Font,
-                        TextSize = 10,
-                        TextColor3 = Theme.White,
-                        BackgroundColor3 = controlConfig.Color or Theme.RedDark,
-                        BorderSizePixel = 0,
-                        AutoButtonColor = false,
-                        Position = UDim2.new(1, -100, 0, 5),
-                        Size = UDim2.fromOffset(96, 27),
-                    }, row), 5)
-                else
-                    button = corner(new("TextButton", {
-                        Text = controlConfig.ButtonText or controlConfig.Title or "BUTTON",
-                        Font = Theme.Font,
-                        TextSize = 10,
-                        TextColor3 = Theme.White,
-                        BackgroundColor3 = controlConfig.Color or Theme.RedDark,
-                        BorderSizePixel = 0,
-                        AutoButtonColor = false,
-                        Size = UDim2.new(1, 0, 0, 29),
-                    }, row), 5)
-                end
-
-                stroke(button, Theme.Line, 0.55, 1)
-
-                track(button.Activated:Connect(function()
-                    if type(controlConfig.Callback) == "function" then
-                        controlConfig.Callback()
-                    end
-                end))
-
-                local api = {}
-
-                function api:SetText(value)
-                    button.Text = tostring(value or "")
-                end
-
-                api.Button = button
-
-                return api
-            end
-
-            --------------------------------------------------
-            -- PARAGRAPH / INFO
-            --------------------------------------------------
-
-            function section:AddParagraph(controlConfig)
-                controlConfig = controlConfig or {}
-
-                local lines =
-                    math.max(
-                        1,
-                        select(
-                            2,
-                            tostring(controlConfig.Content or ""):gsub("\n", "\n")
-                        ) + 1
-                    )
-
-                local row = createRow(20 + lines * 14)
-
-                local title = textLabel(
-                    row,
-                    controlConfig.Title or "",
-                    UDim2.new(),
-                    UDim2.new(1, 0, 0, 15),
-                    10,
-                    Theme.Text,
-                    Theme.Font
-                )
-
-                local contentLabel = textLabel(
-                    row,
-                    controlConfig.Content or "",
-                    UDim2.new(0, 0, 0, 17),
-                    UDim2.new(1, 0, 0, lines * 14),
-                    9,
-                    Theme.Muted,
-                    Theme.Body
-                )
-
-                contentLabel.TextWrapped = true
-                contentLabel.TextYAlignment = Enum.TextYAlignment.Top
-
-                local api = {}
-
-                function api:Set(value)
-                    if type(value) == "table" then
-                        if value.Title ~= nil then
-                            title.Text = tostring(value.Title)
-                        end
-
-                        if value.Content ~= nil then
-                            contentLabel.Text = tostring(value.Content)
-                        end
-                    else
-                        contentLabel.Text = tostring(value or "")
-                    end
-                end
-
-                return api
-            end
-
-            --------------------------------------------------
-            -- DROPDOWN
-            --------------------------------------------------
-
-            function section:AddDropdown(controlConfig)
-                controlConfig = controlConfig or {}
-
-                local row = createRow(50)
-
-                textLabel(
-                    row,
-                    controlConfig.Title or "Dropdown",
-                    UDim2.new(),
-                    UDim2.new(1, 0, 0, 14),
-                    10,
-                    Theme.Muted,
-                    Theme.Font
-                )
-
-                local selector = corner(new("TextButton", {
-                    Text = "",
-                    BackgroundColor3 = Theme.Input,
-                    BorderSizePixel = 0,
-                    AutoButtonColor = false,
-                    Position = UDim2.new(0, 0, 0, 18),
-                    Size = UDim2.new(1, 0, 0, 29),
-                    ClipsDescendants = true,
-                }, row), 5)
-
-                stroke(selector, Theme.Stroke, 0.75, 1)
-
-                local selectorText = textLabel(
-                    selector,
-                    controlConfig.EmptyText or controlConfig.Placeholder or "Select options...",
-                    UDim2.new(0, 8, 0, 0),
-                    UDim2.new(1, -30, 1, 0),
-                    11,
-                    Theme.White,
-                    Theme.Body
-                )
-
-                local chevron = makeChevron(selector)
-
-                local multi = controlConfig.Multi == true
-                local options = normalizeList(controlConfig.Options or {})
-                local selected = normalizeList(controlConfig.Default or {})
-
-                if not multi and #selected > 1 then
-                    selected = { selected[1] }
-                end
-
-                local popup = corner(new("Frame", {
-                    Name = "DropdownPopup",
-                    Visible = false,
-                    BackgroundColor3 = Theme.Surface2,
-                    BorderSizePixel = 0,
-                    ClipsDescendants = true,
-                    Size = UDim2.fromOffset(220, 220),
-                    ZIndex = 800,
-                }, page), 6)
-
-                stroke(popup, Theme.Red, 0, 1.4)
-
-                local popupSearch = corner(new("TextBox", {
-                    Name = "DropdownSearch",
-                    Text = "",
-                    PlaceholderText = controlConfig.SearchPlaceholder or "Search...",
-                    Font = Theme.Body,
-                    TextSize = 12,
-                    TextColor3 = Theme.White,
-                    PlaceholderColor3 = Theme.Muted,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    BackgroundColor3 = Theme.Surface3,
-                    BorderSizePixel = 0,
-                    ClearTextOnFocus = false,
-                    Position = UDim2.new(0, 4, 0, 4),
-                    Size = UDim2.new(1, -8, 0, 26),
-                    ZIndex = 801,
-                }, popup), 5)
-
-                new("UIPadding", {
-                    PaddingLeft = UDim.new(0, 8),
-                    PaddingRight = UDim.new(0, 8),
-                }, popupSearch)
-
-                local actions = new("Frame", {
-                    Name = "Actions",
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    Position = UDim2.new(0, 4, 0, 34),
-                    Size = UDim2.new(1, -8, 0, 26),
-                    Visible = multi,
-                    ZIndex = 801,
-                }, popup)
-
-                local selectAll = corner(new("TextButton", {
-                    Text = "SELECT ALL",
-                    Font = Theme.Font,
-                    TextSize = 10,
-                    TextColor3 = Theme.White,
-                    BackgroundColor3 = Theme.RedDark,
-                    BorderSizePixel = 0,
-                    AutoButtonColor = false,
-                    Position = UDim2.new(0, 0, 0, 0),
-                    Size = UDim2.new(0.5, -2, 1, 0),
-                    ZIndex = 802,
-                }, actions), 4)
-
-                local clearAll = corner(new("TextButton", {
-                    Text = "CLEAR ALL",
-                    Font = Theme.Font,
-                    TextSize = 10,
-                    TextColor3 = Theme.White,
-                    BackgroundColor3 = Theme.Surface3,
-                    BorderSizePixel = 0,
-                    AutoButtonColor = false,
-                    Position = UDim2.new(0.5, 2, 0, 0),
-                    Size = UDim2.new(0.5, -2, 1, 0),
-                    ZIndex = 802,
-                }, actions), 4)
-
-                local optionScroll = new("ScrollingFrame", {
-                    Name = "Options",
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    Position = UDim2.new(0, 4, 0, multi and 64 or 34),
-                    Size = UDim2.new(1, -8, 1, multi and -68 or -38),
-                    CanvasSize = UDim2.new(0, 0, 0, 0),
-                    ScrollBarThickness = 3,
-                    ScrollBarImageColor3 = Theme.Red,
-                    ZIndex = 801,
-                }, popup)
-
-                local optionLayout = new("UIListLayout", {
-                    Padding = UDim.new(0, 3),
-                    SortOrder = Enum.SortOrder.LayoutOrder,
-                }, optionScroll)
-
-                local dropdownApi = {
-                    Popup = popup,
-                }
-
-                local function updateSelectorText()
-                    selectorText.Text =
-                        formatSelection(
-                            selected,
-                            controlConfig.EmptyText
-                                or controlConfig.Placeholder
-                                or "Select options..."
-                        )
-                end
-
-                local function fireCallback()
-                    if type(controlConfig.Callback) == "function" then
-                        if multi then
-                            controlConfig.Callback(normalizeList(selected))
-                        else
-                            controlConfig.Callback(selected[1])
-                        end
-                    end
-                end
-
-                local function rebuildOptions()
-                    for _, child in ipairs(optionScroll:GetChildren()) do
-                        if not child:IsA("UIListLayout") then
-                            child:Destroy()
-                        end
-                    end
-
-                    local query =
-                        string.lower(
-                            tostring(popupSearch.Text or "")
-                        )
-
-                    local count = 0
-
-                    for _, option in ipairs(options) do
-                        if query == ""
-                            or string.find(
-                                string.lower(option),
-                                query,
-                                1,
-                                true
-                            )
-                        then
-                            count += 1
-
-                            local isSelected =
-                                listContains(selected, option)
-
-                            local optionButton = corner(new("TextButton", {
-                                Text = "",
-                                BackgroundColor3 =
-                                    isSelected
-                                    and Color3.fromRGB(56, 25, 32)
-                                    or Theme.Surface3,
-                                BorderSizePixel = 0,
-                                AutoButtonColor = false,
-                                Size = UDim2.new(1, -3, 0, 28),
-                                LayoutOrder = count,
-                                ZIndex = 802,
-                            }, optionScroll), 4)
-
-                            local check = textLabel(
-                                optionButton,
-                                isSelected and "✓" or "",
-                                UDim2.new(0, 7, 0, 0),
-                                UDim2.fromOffset(18, 28),
-                                12,
-                                Theme.Success,
-                                Theme.Font,
-                                Enum.TextXAlignment.Center
-                            )
-
-                            check.ZIndex = 803
-
-                            local optionText = textLabel(
-                                optionButton,
-                                option,
-                                UDim2.new(0, 30, 0, 0),
-                                UDim2.new(1, -35, 1, 0),
-                                10,
-                                Theme.White,
-                                Theme.Body
-                            )
-
-                            optionText.ZIndex = 803
-
-                            track(optionButton.Activated:Connect(function()
-                                if multi then
-                                    if listContains(selected, option) then
-                                        local replacement = {}
-
-                                        for _, value in ipairs(selected) do
-                                            if value ~= option then
-                                                replacement[#replacement + 1] = value
-                                            end
-                                        end
-
-                                        selected = replacement
-                                    else
-                                        selected[#selected + 1] = option
-                                    end
-
-                                    updateSelectorText()
-                                    rebuildOptions()
-                                    fireCallback()
-                                else
-                                    selected = { option }
-                                    updateSelectorText()
-                                    fireCallback()
-                                    dropdownApi:Close()
-                                end
-                            end))
-                        end
-                    end
-
-                    optionScroll.CanvasSize =
-                        UDim2.new(
-                            0,
-                            0,
-                            0,
-                            optionLayout.AbsoluteContentSize.Y + 4
-                        )
-                end
-
-                function dropdownApi:Close()
-                    popup.Visible = false
-                    tween(chevron, {
-                        Rotation = 0,
-                    }, 0.14)
-
-                    if activeDropdown == self then
-                        activeDropdown = nil
-                    end
-                end
-
-                function dropdownApi:Open()
-                    if activeDropdown
-                        and activeDropdown ~= self
-                        and activeDropdown.Close
-                    then
-                        activeDropdown:Close()
-                    end
-
-                    activeDropdown = self
-
-                    local selectorPosition = selector.AbsolutePosition
-                    local pagePosition = page.AbsolutePosition
-
-                    local relativeX =
-                        selectorPosition.X - pagePosition.X
-
-                    local relativeY =
-                        selectorPosition.Y - pagePosition.Y
-                        + selector.AbsoluteSize.Y
-                        + 4
-
-                    local popupWidth =
-                        math.max(
-                            180,
-                            selector.AbsoluteSize.X
-                        )
-
-                    local popupHeight =
-                        math.min(
-                            230,
-                            (multi and 68 or 38)
-                                + math.max(
-                                    32,
-                                    math.min(#options, 6) * 31
-                                )
-                        )
-
-                    popup.Position =
-                        UDim2.fromOffset(
-                            relativeX,
-                            relativeY
-                        )
-
-                    popup.Size =
-                        UDim2.fromOffset(
-                            popupWidth,
-                            popupHeight
-                        )
-
-                    popupSearch.Text = ""
-                    rebuildOptions()
-                    popup.Visible = true
-
-                    tween(chevron, {
-                        Rotation = 180,
-                    }, 0.14)
-                end
-
-                function dropdownApi:Set(value, fire)
-                    selected = normalizeList(value)
-
-                    if not multi and #selected > 1 then
-                        selected = { selected[1] }
-                    end
-
-                    updateSelectorText()
-
-                    if popup.Visible then
-                        rebuildOptions()
-                    end
-
-                    if fire == true then
-                        fireCallback()
-                    end
-                end
-
-                function dropdownApi:Get()
-                    if multi then
-                        return normalizeList(selected)
-                    end
-
-                    return selected[1]
-                end
-
-                function dropdownApi:SetOptions(newOptions, preserveSelection)
-                    options = normalizeList(newOptions)
-
-                    if preserveSelection ~= true then
-                        selected = {}
-                    else
-                        local filtered = {}
-
-                        for _, value in ipairs(selected) do
-                            if listContains(options, value) then
-                                filtered[#filtered + 1] = value
-                            end
-                        end
-
-                        selected = filtered
-                    end
-
-                    updateSelectorText()
-
-                    if popup.Visible then
-                        rebuildOptions()
-                    end
-                end
-
-                function dropdownApi:Refresh(newOptions, newSelection)
-                    if newOptions ~= nil then
-                        options = normalizeList(newOptions)
-                    end
-
-                    if newSelection ~= nil then
-                        selected = normalizeList(newSelection)
-                    end
-
-                    if not multi and #selected > 1 then
-                        selected = { selected[1] }
-                    end
-
-                    updateSelectorText()
-
-                    if popup.Visible then
-                        rebuildOptions()
-                    end
-                end
-
-                track(selector.Activated:Connect(function()
-                    if popup.Visible then
-                        dropdownApi:Close()
-                    else
-                        dropdownApi:Open()
-                    end
-                end))
-
-                track(popupSearch:GetPropertyChangedSignal("Text"):Connect(rebuildOptions))
-
-                track(selectAll.Activated:Connect(function()
-                    if multi then
-                        selected = normalizeList(options)
-                        updateSelectorText()
-                        rebuildOptions()
-                        fireCallback()
-                    end
-                end))
-
-                track(clearAll.Activated:Connect(function()
-                    selected = {}
-                    updateSelectorText()
-                    rebuildOptions()
-                    fireCallback()
-                end))
-
-                updateSelectorText()
-
-                return dropdownApi
-            end
-
-            updateCardHeight()
-
-            return section
-        end
-
-        --------------------------------------------------
-        -- USER DASHBOARD
-        --
-        -- Recreates the compact ScoopHub V2 User layout:
-        --   PLAYER INFO    | SESSION INFO
-        --   PREFERENCES    | WEATHER
-        --
-        -- Weather intentionally has no feature content yet.
-        --------------------------------------------------
-
-        function tab:AddUserDashboard(dashboardConfig)
-            dashboardConfig =
-                dashboardConfig or {}
-
-            self.TitleLabel.Visible = false
-            self.StatusLabel.Visible = false
-            self.FixedContent = true
-
-            self.Scroll.Position =
-                UDim2.new(0, 0, 0, 0)
-
-            self.Scroll.Size =
-                UDim2.new(1, 0, 1, 0)
-
-            -- USER is a fixed dashboard, not a scrolling feature page.
-            self.Scroll.ScrollingEnabled = false
-            self.Scroll.ScrollBarThickness = 0
-            self.Scroll.CanvasPosition = Vector2.new(0, 0)
-            self.Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-
-            self.ContentTopOffset = 49
-
-            -- Match the original User-page geometry exactly:
-            -- left card  = UDim2.new(.5, -5)
-            -- right card = UDim2.new(.5, -5), starting at .5 + 5px.
-            -- Keep the User cards away from the clipped page edges.
-            -- 4px outer padding + 10px center gap prevents the panel
-            -- UIStroke from colliding with / being cut by the page border.
-            self.LeftColumn.Position =
-                UDim2.new(0, 4, 0, 49)
-
-            self.LeftColumn.Size =
-                UDim2.new(0.5, -9, 0, 0)
-
-            self.RightColumn.Position =
-                UDim2.new(0.5, 5, 0, 49)
-
-            self.RightColumn.Size =
-                UDim2.new(0.5, -9, 0, 0)
-
-            --------------------------------------------------
-            -- HEADER
-            --------------------------------------------------
-
-            new("ImageLabel", {
-                Name = "UserHeaderIcon",
-                Image =
-                    dashboardConfig.Icon
-                    or "rbxassetid://17132521951",
-                ImageColor3 = Theme.Red,
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
-                Position = UDim2.new(0, 3, 0, 4),
-                Size = UDim2.fromOffset(31, 31),
-                ZIndex = 15,
-            }, self.Scroll)
-
-            local userTitle =
-                textLabel(
-                    self.Scroll,
-                    dashboardConfig.Title
-                        or "USER",
-                    UDim2.new(0, 41, 0, 4),
-                    UDim2.new(1, -45, 0, 20),
-                    16,
-                    Theme.White,
-                    Theme.Font
-                )
-
-            userTitle.ZIndex = 15
-
-            local userDescription =
-                textLabel(
-                    self.Scroll,
-                    dashboardConfig.Description
-                        or "Manage your account, preferences and session.",
-                    UDim2.new(0, 41, 0, 24),
-                    UDim2.new(1, -45, 0, 16),
-                    10,
-                    Theme.Muted,
-                    Theme.Body
-                )
-
-            userDescription.ZIndex = 15
-
-            --------------------------------------------------
-            -- HELPERS
-            --------------------------------------------------
-
-            local function fixedCard(
-                parentColumn,
-                title,
-                height,
-                order
-            )
-                local card =
-                    panel(
-                        parentColumn,
-                        UDim2.new(),
-                        UDim2.new(1, 0, 0, height),
-                        title
-                    )
-
-                card.LayoutOrder = order
-                return card
-            end
-
-            local function smallButton(
-                parent,
-                buttonText,
-                position,
-                size
-            )
-                return corner(new("TextButton", {
-                    Text = buttonText,
-                    Position = position,
-                    Size = size,
-                    BackgroundColor3 = Theme.Surface2,
-                    BackgroundTransparency = 0.08,
-                    TextColor3 = Theme.White,
-                    Font = Theme.Font,
-                    TextSize = 9,
-                    BorderSizePixel = 0,
-                    AutoButtonColor = false,
-                }, parent), 4)
-            end
-
-            local function infoRow(
-                parent,
-                title,
-                value,
-                y
-            )
-                textLabel(
-                    parent,
-                    title,
-                    UDim2.new(0, 12, 0, y),
-                    UDim2.new(0.40, -12, 0, 18),
-                    9,
-                    Theme.Muted,
-                    Theme.Body
-                )
-
-                local valueLabel =
-                    textLabel(
-                        parent,
-                        value,
-                        UDim2.new(0.40, 0, 0, y),
-                        UDim2.new(0.60, -12, 0, 18),
-                        9,
-                        Theme.White,
-                        Theme.Body,
-                        Enum.TextXAlignment.Right
-                    )
-
-                new("Frame", {
-                    Position =
-                        UDim2.new(
-                            0,
-                            12,
-                            0,
-                            y + 20
-                        ),
-                    Size =
-                        UDim2.new(
-                            1,
-                            -24,
-                            0,
-                            1
-                        ),
-                    BackgroundColor3 =
-                        Theme.Line,
-                    BackgroundTransparency =
-                        0.72,
-                    BorderSizePixel = 0,
-                }, parent)
-
-                return valueLabel
-            end
-
-            local function dashboardToggle(
-                parent,
-                title,
-                description,
-                y,
-                initial,
-                callback,
-                preferenceStyle
-            )
-                textLabel(
-                    parent,
-                    title,
-                    UDim2.new(0, 12, 0, y),
-                    UDim2.new(1, -75, 0, 15),
-                    10,
-                    Theme.White,
-                    Theme.Font
-                )
-
-                if description and description ~= "" then
-                    textLabel(
-                        parent,
-                        description,
-                        UDim2.new(0, 12, 0, y + 14),
-                        UDim2.new(1, -75, 0, 14),
-                        8,
-                        Theme.Muted,
-                        Theme.Body
-                    )
-                end
-
-                local state =
-                    initial == true
-
-                local offColor =
-                    preferenceStyle
-                    and Color3.fromRGB(
-                        47,
-                        43,
-                        47
-                    )
-                    or Theme.RedDark
-
-                local onColor =
-                    preferenceStyle
-                    and Theme.RedDark
-                    or Theme.Success
-
-                local toggle =
-                    corner(new("TextButton", {
-                        Text = "",
-                        Position =
-                            UDim2.new(
-                                1,
-                                -58,
-                                0,
-                                y + 3
-                            ),
-                        Size =
-                            UDim2.fromOffset(
-                                43,
-                                21
-                            ),
-                        BackgroundColor3 =
-                            state
-                            and onColor
-                            or offColor,
-                        BorderSizePixel = 0,
-                        AutoButtonColor = false,
-                    }, parent), 20)
-
-                stroke(
-                    toggle,
-                    state
-                        and (
-                            preferenceStyle
-                            and Theme.Red
-                            or Theme.Success
-                        )
-                        or Color3.fromRGB(
-                            93,
-                            77,
-                            82
-                        ),
-                    0.48,
-                    1
-                )
-
-                local knob =
-                    corner(new("Frame", {
-                        AnchorPoint =
-                            Vector2.new(
-                                0,
-                                0.5
-                            ),
-                        Position =
-                            state
-                            and UDim2.new(
-                                1,
-                                -19,
-                                0.5,
-                                0
-                            )
-                            or UDim2.new(
-                                0,
-                                3,
-                                0.5,
-                                0
-                            ),
-                        Size =
-                            UDim2.fromOffset(
-                                16,
-                                16
-                            ),
-                        BackgroundColor3 =
-                            Theme.White,
-                        BorderSizePixel = 0,
-                    }, toggle), 20)
-
-                local api = {}
-
-                function api:Set(
-                    value,
-                    fire
-                )
-                    state =
-                        value == true
-
-                    tween(
-                        toggle,
-                        {
-                            BackgroundColor3 =
-                                state
-                                and onColor
-                                or offColor,
-                        },
-                        0.12
-                    )
-
-                    tween(
-                        knob,
-                        {
-                            Position =
-                                state
-                                and UDim2.new(
-                                    1,
-                                    -19,
-                                    0.5,
-                                    0
-                                )
-                                or UDim2.new(
-                                    0,
-                                    3,
-                                    0.5,
-                                    0
-                                ),
-                        },
-                        0.12
-                    )
-
-                    local toggleStroke =
-                        toggle:
-                            FindFirstChildOfClass(
-                                "UIStroke"
-                            )
-
-                    if toggleStroke then
-                        toggleStroke.Color =
-                            state
-                            and (
-                                preferenceStyle
-                                and Theme.Red
-                                or Theme.Success
-                            )
-                            or Color3.fromRGB(
-                                93,
-                                77,
-                                82
-                            )
-                    end
-
-                    if fire ~= false
-                        and type(callback)
-                            == "function"
-                    then
-                        callback(state)
-                    end
-                end
-
-                function api:Get()
-                    return state
-                end
-
-                track(
-                    toggle.Activated:
-                        Connect(function()
-                            api:Set(
-                                not state,
-                                true
-                            )
-                        end)
-                )
-
-                return api
-            end
-
-            --------------------------------------------------
-            -- PLAYER INFO
-            --------------------------------------------------
-
-            local playerCard =
-                fixedCard(
-                    self.LeftColumn,
-                    "PLAYER INFO",
-                    159,
-                    1
-                )
-
-            local avatarTile =
-                corner(new("Frame", {
-                    Position =
-                        UDim2.new(
-                            0,
-                            12,
-                            0,
-                            31
-                        ),
-                    Size =
-                        UDim2.fromOffset(
-                            92,
-                            72
-                        ),
-                    BackgroundColor3 =
-                        Color3.fromRGB(
-                            26,
-                            25,
-                            28
-                        ),
-                    BorderSizePixel = 0,
-                    ClipsDescendants = true,
-                }, playerCard), 6)
-
-            stroke(
-                avatarTile,
-                Color3.fromRGB(
-                    85,
-                    66,
-                    72
-                ),
-                0.62,
-                1
-            )
-
-            new("ImageLabel", {
-                Image =
-                    "rbxthumb://type=AvatarBust&id="
-                    .. tostring(
-                        LocalPlayer.UserId
-                    )
-                    .. "&w=180&h=180",
-                BackgroundTransparency = 1,
-                BorderSizePixel = 0,
-                Size = UDim2.fromScale(1, 1),
-                ScaleType = Enum.ScaleType.Fit,
-            }, avatarTile)
-
-            local function playerValue(
-                title,
-                value,
-                y
-            )
-                textLabel(
-                    playerCard,
-                    title,
-                    UDim2.new(0, 114, 0, y),
-                    UDim2.new(1, -124, 0, 13),
-                    9,
-                    Theme.Muted,
-                    Theme.Body
-                )
-
-                textLabel(
-                    playerCard,
-                    tostring(value),
-                    UDim2.new(
-                        0,
-                        114,
-                        0,
-                        y + 13
-                    ),
-                    UDim2.new(
-                        1,
-                        -124,
-                        0,
-                        15
-                    ),
-                    10,
-                    Theme.White,
-                    Theme.Font
-                )
-            end
-
-            playerValue(
-                "Username",
-                LocalPlayer.Name,
-                30
-            )
-
-            playerValue(
-                "User ID",
-                LocalPlayer.UserId,
-                60
-            )
-
-            playerValue(
-                "Display Name",
-                LocalPlayer.DisplayName,
-                90
-            )
-
-            local copyIdButton =
-                smallButton(
-                    playerCard,
-                    "COPY USER ID",
-                    UDim2.new(
-                        0,
-                        12,
-                        1,
-                        -30
-                    ),
-                    UDim2.new(
-                        0.5,
-                        -18,
-                        0,
-                        22
-                    )
-                )
-
-            local rejoinButton =
-                smallButton(
-                    playerCard,
-                    "REJOIN",
-                    UDim2.new(
-                        0.5,
-                        6,
-                        1,
-                        -30
-                    ),
-                    UDim2.new(
-                        0.5,
-                        -18,
-                        0,
-                        22
-                    )
-                )
-
-            track(
-                copyIdButton.Activated:
-                    Connect(function()
-                        local copied = false
-                        local copy =
-                            setclipboard
-                            or toclipboard
-
-                        if type(copy)
-                            == "function"
-                        then
-                            copied =
-                                pcall(
-                                    copy,
-                                    tostring(
-                                        LocalPlayer.UserId
-                                    )
-                                )
-                        end
-
-                        copyIdButton.Text =
-                            copied
-                            and "COPIED"
-                            or tostring(
-                                LocalPlayer.UserId
-                            )
-
-                        task.delay(
-                            1.15,
-                            function()
-                                if copyIdButton.Parent
-                                then
-                                    copyIdButton.Text =
-                                        "COPY USER ID"
-                                end
-                            end
-                        )
-                    end)
-            )
-
-            track(
-                rejoinButton.Activated:
-                    Connect(function()
-                        if type(
-                            dashboardConfig.OnRejoin
-                        ) == "function"
-                        then
-                            dashboardConfig.OnRejoin()
-                            return
-                        end
-
-                        local TeleportService =
-                            game:GetService(
-                                "TeleportService"
-                            )
-
-                        pcall(function()
-                            if game.JobId
-                                and game.JobId ~= ""
-                            then
-                                TeleportService:
-                                    TeleportToPlaceInstance(
-                                        game.PlaceId,
-                                        game.JobId,
-                                        LocalPlayer
-                                    )
-                            else
-                                TeleportService:
-                                    Teleport(
-                                        game.PlaceId,
-                                        LocalPlayer
-                                    )
-                            end
-                        end)
-                    end)
-            )
-
-            --------------------------------------------------
-            -- SESSION INFO
-            --------------------------------------------------
-
-            local sessionCard =
-                fixedCard(
-                    self.RightColumn,
-                    "SESSION INFO",
-                    159,
-                    1
-                )
-
-            local initialTime =
-                math.max(
-                    0,
-                    tonumber(time()) or 0
-                )
-
-            local startedAt =
-                os.time()
-                - math.floor(
-                    initialTime
-                )
-
-            local function formatDuration(
-                totalSeconds
-            )
-                totalSeconds =
-                    math.max(
-                        0,
-                        math.floor(
-                            tonumber(
-                                totalSeconds
-                            ) or 0
-                        )
-                    )
-
-                local hours =
-                    math.floor(
-                        totalSeconds / 3600
-                    )
-
-                local minutes =
-                    math.floor(
-                        (
-                            totalSeconds % 3600
-                        ) / 60
-                    )
-
-                local seconds =
-                    totalSeconds % 60
-
-                return string.format(
-                    "%02d:%02d:%02d",
-                    hours,
-                    minutes,
-                    seconds
-                )
-            end
-
-            local playTimeValue =
-                infoRow(
-                    sessionCard,
-                    "Play Time",
-                    formatDuration(
-                        initialTime
-                    ),
-                    31
-                )
-
-            infoRow(
-                sessionCard,
-                "Join Time",
-                os.date(
-                    "%m/%d/%Y %I:%M:%S %p",
-                    startedAt
-                ),
-                55
-            )
-
-            infoRow(
-                sessionCard,
-                "Place ID",
-                tostring(
-                    game.PlaceId
-                ),
-                79
-            )
-
-            infoRow(
-                sessionCard,
-                "Job ID",
-                tostring(
-                    game.JobId or "-"
-                ),
-                103
-            )
-
-            task.spawn(function()
-                while not window.Closed
-                    and playTimeValue.Parent
-                do
-                    playTimeValue.Text =
-                        formatDuration(
-                            time()
-                        )
-
-                    task.wait(1)
-                end
-            end)
-
-            --------------------------------------------------
-            -- PREFERENCES
-            --------------------------------------------------
-
-            local preferenceCard =
-                fixedCard(
-                    self.LeftColumn,
-                    "PREFERENCES",
-                    174,
-                    2
-                )
-
-            local preferences =
-                dashboardConfig.Preferences
-                or {}
-
-            local autoRejoin =
-                dashboardToggle(
-                    preferenceCard,
-                    "Auto Rejoin",
-                    "Automatically rejoin after a disconnect.",
-                    31,
-                    preferences.AutoRejoin
-                        == true,
-                    function(value)
-                        preferences.AutoRejoin =
-                            value
-
-                        Library.AutoRejoinEnabled =
-                            value
-
-                        if type(
-                            dashboardConfig.OnAutoRejoin
-                        ) == "function"
-                        then
-                            dashboardConfig.OnAutoRejoin(
-                                value
-                            )
-                        end
-                    end,
-                    true
-                )
-
-            local lowGraphics =
-                dashboardToggle(
-                    preferenceCard,
-                    "Low Graphics Mode",
-                    "Reduce world effects and decorative UI for better FPS.",
-                    66,
-                    preferences.LowGraphics
-                        == true,
-                    function(value)
-                        preferences.LowGraphics =
-                            value
-
-                        Library.LowGraphicsEnabled =
-                            value
-
-                        decorativeStars.Visible =
-                            not value
-
-                        if type(
-                            dashboardConfig.OnLowGraphics
-                        ) == "function"
-                        then
-                            dashboardConfig.OnLowGraphics(
-                                value
-                            )
-                        end
-                    end,
-                    true
-                )
-
-            local notifications =
-                dashboardToggle(
-                    preferenceCard,
-                    "UI Notifications",
-                    "Keep ScoopHub notification preference enabled.",
-                    101,
-                    preferences.Notifications
-                        == true,
-                    function(value)
-                        preferences.Notifications =
-                            value
-
-                        Library.NotificationsEnabled =
-                            value
-                    end,
-                    true
-                )
-
-            local tooltips =
-                dashboardToggle(
-                    preferenceCard,
-                    "Show Tooltips",
-                    "Show helper descriptions where supported.",
-                    136,
-                    preferences.Tooltips
-                        == true,
-                    function(value)
-                        preferences.Tooltips =
-                            value
-
-                        Library.TooltipsEnabled =
-                            value
-                    end,
-                    true
-                )
-
-            decorativeStars.Visible =
-                not (
-                    preferences.LowGraphics
-                    == true
-                )
-
-            --------------------------------------------------
-            -- LOCALPLAYER
-            --------------------------------------------------
-
-            local localPlayerCard =
-                fixedCard(
-                    self.RightColumn,
-                    "LOCALPLAYER",
-                    174,
-                    2
-                )
-
-            local localConfig =
-                dashboardConfig.LocalPlayer
-                or {}
-
-            textLabel(
-                localPlayerCard,
-                "WalkSpeed Value",
-                UDim2.new(0, 12, 0, 31),
-                UDim2.new(1, -24, 0, 14),
-                9,
-                Theme.Muted,
-                Theme.Font
-            )
-
-            local walkSpeedInput =
-                corner(new("TextBox", {
-                    Text =
-                        tostring(
-                            localConfig.WalkSpeedValue
-                            or 16
-                        ),
-                    PlaceholderText = "16",
-                    ClearTextOnFocus = false,
-                    Font = Theme.Font,
-                    TextSize = 10,
-                    TextColor3 = Theme.White,
-                    PlaceholderColor3 = Theme.Muted,
-                    TextXAlignment =
-                        Enum.TextXAlignment.Left,
-                    BackgroundColor3 =
-                        Theme.Input,
-                    BorderSizePixel = 0,
-                    Position =
-                        UDim2.new(
-                            0,
-                            12,
-                            0,
-                            48
-                        ),
-                    Size =
-                        UDim2.new(
-                            1,
-                            -24,
-                            0,
-                            27
-                        ),
-                }, localPlayerCard), 5)
-
-            new("UIPadding", {
-                PaddingLeft =
-                    UDim.new(0, 8),
-                PaddingRight =
-                    UDim.new(0, 8),
-            }, walkSpeedInput)
-
-            stroke(
-                walkSpeedInput,
-                Theme.Stroke,
-                0.75,
-                1
-            )
-
-            track(
-                walkSpeedInput.FocusLost:
-                    Connect(function(
-                        enterPressed
-                    )
-                        if type(
-                            localConfig.OnWalkSpeedValue
-                        ) == "function"
-                        then
-                            localConfig.OnWalkSpeedValue(
-                                walkSpeedInput.Text,
-                                enterPressed
-                            )
-                        end
-                    end)
-            )
-
-            local walkSpeed =
-                dashboardToggle(
-                    localPlayerCard,
-                    "WalkSpeed",
-                    "",
-                    87,
-                    localConfig.WalkSpeed
-                        == true,
-                    function(value)
-                        if type(
-                            localConfig.OnWalkSpeed
-                        ) == "function"
-                        then
-                            localConfig.OnWalkSpeed(
-                                value
-                            )
-                        end
-                    end,
-                    false
-                )
-
-            local infiniteJump =
-                dashboardToggle(
-                    localPlayerCard,
-                    "InfiniteJump",
-                    "",
-                    122,
-                    localConfig.InfiniteJump
-                        == true,
-                    function(value)
-                        if type(
-                            localConfig.OnInfiniteJump
-                        ) == "function"
-                        then
-                            localConfig.OnInfiniteJump(
-                                value
-                            )
-                        end
-                    end,
-                    false
-                )
-
-            task.defer(updateCanvas)
-
-            return {
-                PlayerCard = playerCard,
-                SessionCard = sessionCard,
-                PreferencesCard = preferenceCard,
-                LocalPlayerCard = localPlayerCard,
-
-                AutoRejoin = autoRejoin,
-                LowGraphics = lowGraphics,
-                Notifications = notifications,
-                Tooltips = tooltips,
-
-                WalkSpeedInput = walkSpeedInput,
-                WalkSpeed = walkSpeed,
-                InfiniteJump = infiniteJump,
-            }
-        end
-
-        tab.AddCard = tab.AddSection
-
-        track(navButton.Activated:Connect(function()
-            openTab(name)
-        end))
-
-        if not activeTab then
-            openTab(name)
-        end
-
-        updateNavCanvas()
-
-        return tab
-    end
-
-    --------------------------------------------------
-    -- RIGHT-SIDE NOTIFICATION
-    --------------------------------------------------
-
-    local activeNotice = nil
-
-    function window:Notify(info, force)
-        info = info or {}
-
-        if not force
-            and Library.NotificationsEnabled
-                == false
-        then
-            return
-        end
-
-        if activeNotice
-            and activeNotice.Parent
-        then
-            activeNotice:Destroy()
-        end
-
-        local notice =
-            corner(
-                new("Frame", {
-                    Name =
-                        "ScoopHubNotification",
-                    AnchorPoint =
-                        Vector2.new(
-                            1,
-                            1
-                        ),
-                    BackgroundColor3 =
-                        Theme.Panel,
-                    BorderSizePixel =
-                        0,
-                    Position =
-                        UDim2.new(
-                            1,
-                            400,
-                            1,
-                            -30
-                        ),
-                    Size =
-                        UDim2.fromOffset(
-                            320,
-                            70
-                        ),
-                    ZIndex =
-                        950,
-                }, screenGui),
-                8
-            )
-
-        activeNotice = notice
-
-        stroke(
-            notice,
-            Theme.Line,
-            0.22,
-            1
-        )
-
-        local noticeTitle =
-            tostring(
-                info.Title
-                or "ScoopHub"
-            )
-
-        local noticeAccent =
-            tostring(
-                info.Description
-                or info.AccentTitle
-                or ""
-            )
-
-        local firstTitle =
-            textLabel(
-                notice,
-                noticeTitle,
-                UDim2.fromOffset(
-                    12,
-                    8
-                ),
-                UDim2.fromOffset(
-                    170,
-                    20
-                ),
-                14,
-                Theme.White,
-                Theme.Font
-            )
-
-        firstTitle.ZIndex =
-            952
-
-        if noticeAccent ~= "" then
-            local accentTitle =
-                textLabel(
-                    notice,
-                    " " .. noticeAccent,
-                    UDim2.fromOffset(
-                        12,
-                        8
-                    ),
-                    UDim2.fromOffset(
-                        170,
-                        20
-                    ),
-                    14,
-                    Theme.Red,
-                    Theme.Font
-                )
-
-            accentTitle.ZIndex =
-                952
-
-            task.defer(function()
-                if accentTitle.Parent
-                    and firstTitle.Parent
-                then
-                    accentTitle.Position =
-                        UDim2.new(
-                            0,
-                            12
-                                + firstTitle
-                                    .TextBounds.X,
-                            0,
-                            8
-                        )
-                end
-            end)
-        end
-
-        local body =
-            textLabel(
-                notice,
-                tostring(
-                    info.Content
-                    or ""
-                ),
-                UDim2.fromOffset(
-                    12,
-                    35
-                ),
-                UDim2.new(
-                    1,
-                    -48,
-                    0,
-                    24
-                ),
-                12,
-                Theme.Muted,
-                Theme.Body
-            )
-
-        body.ZIndex =
-            952
-
-        local closeNotice =
-            new("TextButton", {
-                Text =
-                    "X",
-                Font =
-                    Theme.Font,
-                TextSize =
-                    14,
-                TextColor3 =
-                    Color3.fromRGB(
-                        200,
-                        200,
-                        200
-                    ),
-                BackgroundTransparency =
-                    1,
-                AnchorPoint =
-                    Vector2.new(
-                        1,
-                        0
-                    ),
-                Position =
-                    UDim2.new(
-                        1,
-                        -8,
-                        0,
-                        6
-                    ),
-                Size =
-                    UDim2.fromOffset(
-                        22,
-                        22
-                    ),
-                BorderSizePixel =
-                    0,
-                ZIndex =
-                    953,
-            }, notice)
-
-        track(
-            closeNotice.Activated:
-                Connect(function()
-                    if notice.Parent then
-                        notice:Destroy()
-                    end
-                end)
-        )
-
-        tween(
-            notice,
-            {
-                Position =
-                    UDim2.new(
-                        1,
-                        -30,
-                        1,
-                        -30
-                    ),
-            },
-            0.35
-        )
-
-        task.delay(
-            tonumber(
-                info.Delay
-            ) or 5,
-            function()
-                if notice.Parent then
-                    tween(
-                        notice,
-                        {
-                            Position =
-                                UDim2.new(
-                                    1,
-                                    400,
-                                    1,
-                                    -30
-                                ),
-                        },
-                        0.30
-                    )
-
-                    task.delay(
-                        0.35,
-                        function()
-                            if notice.Parent then
-                                notice:Destroy()
-                            end
-                        end
-                    )
-                end
-            end
-        )
-    end
-
-    Library._LastWindow =
-        window
-
-    --------------------------------------------------
-    -- DISCORD BUTTON
-    --------------------------------------------------
-
-    track(discordButton.Activated:Connect(function()
-        local copied =
-            false
-
-        local copyFunction =
-            setclipboard
-            or toclipboard
-
-        if type(copyFunction)
-            == "function"
-        then
-            copied =
-                pcall(
-                    copyFunction,
-                    discordText
-                )
-        end
-
-        window:Notify({
-            Title =
-                "ScoopHub",
-            Description =
-                "Discord",
-            Content =
-                copied
-                and (
-                    "Copied to clipboard: "
-                    .. discordText
-                )
-                or "Clipboard is unavailable in this executor.",
-            Delay =
-                5,
-        }, true)
-
-        if type(config.OnDiscordClick) == "function" then
-            config.OnDiscordClick(
-                discordText,
-                copied
-            )
-        end
-    end))
-
-    --------------------------------------------------
-    -- MINIMIZE / RESTORE
-    --------------------------------------------------
-
-    local minimized = false
-    local expandedPosition = holder.Position
-    local miniPosition = nil
-
-    local miniLauncher = corner(new("TextButton", {
-        Name = "MiniLauncher",
-        Visible = false,
-        Text = "",
-        AutoButtonColor = false,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = holder.Position,
-        Size = UDim2.fromOffset(48, 48),
-        BackgroundColor3 = Theme.Bg,
-        BackgroundTransparency = 0.03,
-        BorderSizePixel = 0,
-        ZIndex = 500,
-    }, screenGui), 12)
-
-    stroke(miniLauncher, Theme.Red, 0.35, 1)
-
-    new("ImageLabel", {
-        Name = "MiniLauncherLogo",
-        Image = config.Logo or "rbxassetid://90541504618217",
-        BackgroundTransparency = 1,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.fromOffset(36, 36),
-        ZIndex = 501,
-    }, miniLauncher)
-
-    local function minimizedPosition()
-        local camera = workspace.CurrentCamera
-
-        if not camera then
-            return expandedPosition
-        end
-
-        local viewport = camera.ViewportSize
-        local pos = minimizeButton.AbsolutePosition
-        local size = minimizeButton.AbsoluteSize
-
-        return UDim2.fromOffset(
-            math.clamp(
-                pos.X + size.X / 2,
-                28,
-                viewport.X - 28
-            ),
-            math.clamp(
-                pos.Y + size.Y / 2,
-                28,
-                viewport.Y - 28
-            )
-        )
-    end
-
-    local function setMinimized(value)
-        minimized = value == true
-        closeActiveDropdown()
-
-        if minimized then
-            expandedPosition = holder.Position
-
-            if not miniPosition then
-                miniPosition = minimizedPosition()
-            end
-
-            miniLauncher.Position = miniPosition
-            miniLauncher.Visible = true
-            holder.Visible = false
-        else
-            miniPosition = miniLauncher.Position
-            holder.Position = expandedPosition
-            holder.Visible = true
-            miniLauncher.Visible = false
-        end
-    end
-
-    track(minimizeButton.Activated:Connect(function()
-        setMinimized(not minimized)
-    end))
-
-    --------------------------------------------------
-    -- DRAGGING
-    --------------------------------------------------
-
-    local function makeDraggable(handle, frame, onMoved)
-        local dragging = false
-        local dragStart
-        local startPosition
-        local touchInput
-
-        track(handle.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1
-                or input.UserInputType == Enum.UserInputType.Touch
-            then
-                dragging = true
-                dragStart = input.Position
-                startPosition = frame.Position
-
-                if input.UserInputType == Enum.UserInputType.Touch then
-                    touchInput = input
-                else
-                    touchInput = nil
-                end
-            end
-        end))
-
-        track(UserInputService.InputEnded:Connect(function(input)
-            local mouseEnded =
-                input.UserInputType == Enum.UserInputType.MouseButton1
-                and touchInput == nil
-
-            local touchEnded =
-                input.UserInputType == Enum.UserInputType.Touch
-                and input == touchInput
-
-            if mouseEnded or touchEnded then
-                dragging = false
-                touchInput = nil
-            end
-        end))
-
-        track(UserInputService.InputChanged:Connect(function(input)
-            if not dragging
-                or not dragStart
-                or not startPosition
-            then
-                return
-            end
-
-            local mouseMove =
-                input.UserInputType == Enum.UserInputType.MouseMovement
-                and touchInput == nil
-
-            local touchMove =
-                input.UserInputType == Enum.UserInputType.Touch
-                and input == touchInput
-
-            if not mouseMove and not touchMove then
-                return
-            end
-
-            local delta = input.Position - dragStart
-
-            frame.Position = UDim2.new(
-                startPosition.X.Scale,
-                startPosition.X.Offset + delta.X,
-                startPosition.Y.Scale,
-                startPosition.Y.Offset + delta.Y
-            )
-
-            if onMoved then
-                onMoved(frame.Position)
-            end
-        end))
-    end
-
-    makeDraggable(header, holder, function(position)
-        expandedPosition = position
-    end)
-
-    makeDraggable(miniLauncher, miniLauncher, function(position)
-        miniPosition = position
-    end)
-
-    track(miniLauncher.Activated:Connect(function()
-        setMinimized(false)
-    end))
-
-    --------------------------------------------------
-    -- CLOSE / DESTROY
-    --------------------------------------------------
-
-    function window:Destroy()
-        if self.Closed then
-            return
-        end
-
-        self.Closed = true
-        closeActiveDropdown()
-
-        for index = #connections, 1, -1 do
-            local connection = connections[index]
-
-            pcall(function()
-                connection:Disconnect()
-            end)
-
-            connections[index] = nil
-        end
-
-        if screenGui and screenGui.Parent then
-            screenGui:Destroy()
-        end
-    end
-
-    track(closeButton.Activated:Connect(function()
-        if type(config.OnClose) == "function" then
-            pcall(config.OnClose)
-        end
-
-        window:Destroy()
-    end))
-
-    return window
+    function api:Close()pop.Visible=false;tw(ch,{Rotation=0},.14)end
+    function api:Set(v,firecb)selected=norm(v);if not multi and #selected>1 then selected={selected[1]} end;upd();if pop.Visible then rebuild() end;if firecb==true then fire()end end
+    function api:Get()return multi and norm(selected) or selected[1]end
+    function api:SetOptions(v,preserve)options=norm(v);if preserve~=true then selected={} else local z={} for _,i in ipairs(selected)do if has(options,i)then z[#z+1]=i end end selected=z end;upd();if pop.Visible then rebuild()end end
+    function api:Refresh(v,s)if v~=nil then options=norm(v)end;if s~=nil then selected=norm(s)end;if not multi and #selected>1 then selected={selected[1]}end;upd();if pop.Visible then rebuild()end end
+    own(selector.Activated:Connect(function()if pop.Visible then api:Close()else api:Open()end end))
+    own(sb:GetPropertyChangedSignal("Text"):Connect(rebuild))
+    own(all.Activated:Connect(function()if multi then selected=norm(options);upd();rebuild();fire()end end))
+    own(clear.Activated:Connect(function()selected={};upd();rebuild();fire()end))
+    self.Y=y+52;grow();search(title,selector);return api
+   end
+
+   tab:_reflow();return sec
+  end
+
+  function tab:AddUserDashboard(u)
+   u=u or {};P.ClipsDescendants=false
+   if self.Built then
+    if self.TitleLabel then self.TitleLabel:Destroy()end;if self.StatusLabel then self.StatusLabel:Destroy()end;if self.Scroll then self.Scroll:Destroy()end
+    self.Built=false
+   end
+   local prefs=u.Preferences or {};if prefs.Notifications==nil then prefs.Notifications=false end;if prefs.Tooltips==nil then prefs.Tooltips=false end
+   local function card(pos,size,title)
+    local f=C(N("Frame",{Position=pos,Size=size,BackgroundColor3=Color3.fromRGB(12,12,14),BackgroundTransparency=.08,BorderSizePixel=0,ClipsDescendants=true},P),7)
+    S(f,USER_SOFT,.48,1);label(f,title,UDim2.new(0,12,0,8),UDim2.new(1,-24,0,18),11,T.Red,T.Font);return f
+   end
+   local function hover(par,text,pos,size)
+    local b=C(N("TextButton",{Text=text,Position=pos,Size=size,BackgroundColor3=Color3.fromRGB(24,22,25),BackgroundTransparency=.08,
+     BorderSizePixel=0,AutoButtonColor=false,TextColor3=T.White,Font=T.Font,TextSize=10},par),5);S(b,USER_SOFT,.58,1)
+    own(b.MouseEnter:Connect(function()tw(b,{BackgroundColor3=Color3.fromRGB(36,31,35)},.1)end))
+    own(b.MouseLeave:Connect(function()tw(b,{BackgroundColor3=Color3.fromRGB(24,22,25)},.1)end));return b
+   end
+   local function row(par,t,v,y)
+    label(par,t,UDim2.new(0,12,0,y),UDim2.new(.42,-6,0,17),10,T.Muted,T.Body)
+    local x=label(par,v,UDim2.new(.42,0,0,y),UDim2.new(.58,-12,0,17),10,T.White,T.Body,Enum.TextXAlignment.Right)
+    N("Frame",{Position=UDim2.new(0,12,0,y+22),Size=UDim2.new(1,-24,0,1),BackgroundColor3=Color3.fromRGB(68,55,59),BackgroundTransparency=.65,BorderSizePixel=0},par);return x
+   end
+   local function tog(par,t,d,y,init,cb)
+    label(par,t,UDim2.new(0,12,0,y),UDim2.new(1,-75,0,15),10,T.White,T.Font)
+    if d and d~="" then label(par,d,UDim2.new(0,12,0,y+14),UDim2.new(1,-75,0,14),8,T.Muted,T.Body)end
+    local st=init==true;local b=C(N("TextButton",{Text="",Position=UDim2.new(1,-58,0,y+3),Size=UDim2.fromOffset(43,21),
+     BackgroundColor3=st and T.RedDark or Color3.fromRGB(47,43,47),BorderSizePixel=0,AutoButtonColor=false},par),20)
+    S(b,st and T.Red or Color3.fromRGB(93,77,82),.48,1)
+    local k=C(N("Frame",{AnchorPoint=Vector2.new(0,.5),Position=st and UDim2.new(1,-19,.5,0) or UDim2.new(0,3,.5,0),
+     Size=UDim2.fromOffset(16,16),BackgroundColor3=T.White,BorderSizePixel=0},b),20)
+    local api={};function api:Set(v,fire)st=v==true;tw(b,{BackgroundColor3=st and T.RedDark or Color3.fromRGB(47,43,47)},.12);tw(k,{Position=st and UDim2.new(1,-19,.5,0) or UDim2.new(0,3,.5,0)},.12)
+     local q=b:FindFirstChildOfClass("UIStroke");if q then q.Color=st and T.Red or Color3.fromRGB(93,77,82)end;if fire==true and type(cb)=="function"then cb(st)end end
+    function api:Get()return st end;own(b.Activated:Connect(function()api:Set(not st,true)end));return api
+   end
+
+   N("ImageLabel",{Image=u.Icon or "rbxassetid://17132521951",ImageColor3=T.Red,BackgroundTransparency=1,Position=UDim2.new(0,3,0,4),Size=UDim2.fromOffset(31,31)},P)
+   label(P,u.Title or "USER",UDim2.new(0,41,0,4),UDim2.new(1,-45,0,20),16,T.White,T.Font)
+   label(P,u.Description or "Manage your account, preferences and session.",UDim2.new(0,41,0,24),UDim2.new(1,-45,0,16),10,T.Muted,T.Body)
+
+   local pc=card(UDim2.new(0,0,0,49),UDim2.new(.5,-5,0,159),"PLAYER INFO")
+   local av=C(N("Frame",{Position=UDim2.new(0,12,0,31),Size=UDim2.fromOffset(92,72),BackgroundColor3=Color3.fromRGB(26,25,28),BorderSizePixel=0,ClipsDescendants=true},pc),6);S(av,Color3.fromRGB(85,66,72),.62,1)
+   N("ImageLabel",{Image="rbxthumb://type=AvatarBust&id="..tostring(LP.UserId).."&w=180&h=180",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),ScaleType=Enum.ScaleType.Fit},av)
+   local function pv(t,v,y)label(pc,t,UDim2.new(0,114,0,y),UDim2.new(1,-124,0,13),9,T.Muted,T.Body);label(pc,tostring(v),UDim2.new(0,114,0,y+13),UDim2.new(1,-124,0,15),10,T.White,T.Font)end
+   pv("Username",LP.Name,30);pv("User ID",LP.UserId,60);pv("Display Name",LP.DisplayName,90)
+   local copy=hover(pc,"COPY USER ID",UDim2.new(0,12,1,-30),UDim2.new(.5,-18,0,22))
+   local rejoin=hover(pc,"REJOIN",UDim2.new(.5,6,1,-30),UDim2.new(.5,-18,0,22));local rs=rejoin:FindFirstChildOfClass("UIStroke");if rs then rs:Destroy()end
+   own(copy.Activated:Connect(function()local ok=false;if type(setclipboard)=="function"then ok=pcall(setclipboard,tostring(LP.UserId))elseif type(toclipboard)=="function"then ok=pcall(toclipboard,tostring(LP.UserId))end;copy.Text=ok and "COPIED" or tostring(LP.UserId);task.delay(1.15,function()if copy.Parent then copy.Text="COPY USER ID"end end)end))
+   own(rejoin.Activated:Connect(function()if type(u.OnRejoin)=="function"then u.OnRejoin()return end;pcall(function()if game.JobId and game.JobId~=""then TeleportService:TeleportToPlaceInstance(game.PlaceId,game.JobId,LP)else TeleportService:Teleport(game.PlaceId,LP)end end)end))
+
+   local sc=card(UDim2.new(.5,5,0,49),UDim2.new(.5,-5,0,159),"SESSION INFO")
+   local started=os.time()-math.floor(math.max(tonumber(time())or 0,tonumber(workspace.DistributedGameTime)or 0))
+   local function dur(n)n=math.max(0,math.floor(n or 0));return string.format("%02d:%02d:%02d",math.floor(n/3600),math.floor((n%3600)/60),n%60)end
+   local play=row(sc,"Play Time",dur(time()),31);row(sc,"Join Time",os.date("%m/%d/%Y %I:%M:%S %p",started),55);row(sc,"Place ID",tostring(game.PlaceId),79);row(sc,"Job ID",tostring(game.JobId or "-"),103)
+   task.spawn(function()while not window.Closed and play.Parent do if P.Visible then play.Text=dur(math.max(time(),workspace.DistributedGameTime,os.time()-started));task.wait(1)else task.wait(.5)end end end)
+
+   local pref=card(UDim2.new(0,0,0,217),UDim2.new(.5,-5,1,-217),"PREFERENCES")
+   local a=tog(pref,"Auto Rejoin","Automatically rejoin after a disconnect.",31,prefs.AutoRejoin==true,function(v)prefs.AutoRejoin=v;if type(u.OnAutoRejoin)=="function"then u.OnAutoRejoin(v)end end)
+   local l=tog(pref,"Low Graphics Mode","Reduce world effects and decorative UI for better FPS.",66,prefs.LowGraphics==true,function(v)prefs.LowGraphics=v;stars.Visible=not v;if type(u.OnLowGraphics)=="function"then u.OnLowGraphics(v)end end)
+   local n=tog(pref,"UI Notifications","Keep ScoopHub notification preference enabled.",101,prefs.Notifications==true,function(v)prefs.Notifications=v;window.NotificationsEnabled=v end)
+   local tt=tog(pref,"Show Tooltips","Show helper descriptions where supported.",136,prefs.Tooltips==true,function(v)prefs.Tooltips=v;window.TooltipsEnabled=v end)
+   window.NotificationsEnabled=prefs.Notifications==true;window.TooltipsEnabled=prefs.Tooltips==true;stars.Visible=prefs.LowGraphics~=true
+
+   local lc=card(UDim2.new(.5,5,0,217),UDim2.new(.5,-5,1,-217),"LOCALPLAYER")
+   local q=u.LocalPlayer or {}
+   label(lc,"WalkSpeed Value",UDim2.new(0,12,0,31),UDim2.new(1,-24,0,14),9,T.Muted,T.Font)
+   local wi=C(N("TextBox",{Text=tostring(q.WalkSpeedValue or 16),PlaceholderText="16",ClearTextOnFocus=false,Font=T.Font,TextSize=10,TextColor3=T.White,
+    PlaceholderColor3=T.Muted,TextXAlignment=Enum.TextXAlignment.Left,BackgroundColor3=T.Input,BorderSizePixel=0,Position=UDim2.new(0,12,0,48),Size=UDim2.new(1,-24,0,27)},lc),5)
+   N("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8)},wi);S(wi,T.Stroke,.75,1)
+   own(wi.FocusLost:Connect(function(e)if type(q.OnWalkSpeedValue)=="function"then q.OnWalkSpeedValue(wi.Text,e)end end))
+   local ws=tog(lc,"WalkSpeed","",87,q.WalkSpeed==true,q.OnWalkSpeed)
+   local ij=tog(lc,"InfiniteJump","",122,q.InfiniteJump==true,q.OnInfiniteJump)
+   return{PlayerCard=pc,SessionCard=sc,PreferencesCard=pref,LocalPlayerCard=lc,AutoRejoin=a,LowGraphics=l,Notifications=n,Tooltips=tt,WalkSpeedInput=wi,WalkSpeed=ws,InfiniteJump=ij}
+  end
+
+  if not active then open(name) end
+  return tab
+ end
+
+ -- exact idle search field geometry
+ local SearchBox=C(N("TextBox",{Name="ScoopHubGlobalSearch",Position=UDim2.fromOffset(6,7),Size=UDim2.new(1,-12,0,29),
+  BackgroundColor3=T.Surface3,BackgroundTransparency=.04,BorderSizePixel=0,Text="",PlaceholderText="Search...",
+  PlaceholderColor3=T.Muted,TextColor3=T.White,Font=T.Body,TextSize=10,TextXAlignment=Enum.TextXAlignment.Left,
+  ClearTextOnFocus=false,ZIndex=410},Side),5)
+ S(SearchBox,T.Line,.55,1);N("UIPadding",{PaddingLeft=UDim.new(0,9),PaddingRight=UDim.new(0,7)},SearchBox)
+ own(SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+  local q=string.lower(SearchBox.Text or "")
+  for _,name in ipairs(Order) do local d=NavData[name];d.b.Visible=q=="" or string.find(string.lower(name),q,1,true)~=nil end
+ end))
+
+ function window:Notify(info,force)
+  info=info or {};if force~=true and not self.NotificationsEnabled then return end
+  local old=GP:FindFirstChild("ScoopHubDiscordNotification");if old then old:Destroy()end
+  local ng=N("ScreenGui",{Name="ScoopHubDiscordNotification",ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},GP)
+  local nf=C(N("Frame",{AnchorPoint=Vector2.new(1,1),BackgroundColor3=T.Panel,BorderSizePixel=0,Position=UDim2.new(1,400,1,-30),Size=UDim2.fromOffset(320,70)},ng),8);S(nf,T.Line,.22)
+  local first=label(nf,tostring(info.Title or "ScoopHub"),UDim2.fromOffset(12,8),UDim2.fromOffset(180,20),14,T.White,T.Font)
+  local desc=tostring(info.Description or "");if desc~=""then local second=label(nf," "..desc,UDim2.fromOffset(12,8),UDim2.fromOffset(120,20),14,T.Red,T.Font);task.defer(function()if second.Parent then second.Position=UDim2.new(0,12+first.TextBounds.X,0,8)end end)end
+  label(nf,tostring(info.Content or ""),UDim2.fromOffset(12,35),UDim2.new(1,-48,0,24),12,T.Muted,T.Body)
+  local x=N("TextButton",{Text="X",Font=T.Font,TextSize=14,TextColor3=Color3.fromRGB(200,200,200),BackgroundTransparency=1,AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,-8,0,6),Size=UDim2.fromOffset(22,22),BorderSizePixel=0},nf)
+  own(x.Activated:Connect(function()if ng.Parent then ng:Destroy()end end));tw(nf,{Position=UDim2.new(1,-30,1,-30)},.35)
+  task.delay(tonumber(info.Delay)or 5,function()if ng.Parent then tw(nf,{Position=UDim2.new(1,400,1,-30)},.3);task.delay(.35,function()if ng.Parent then ng:Destroy()end end)end end)
+ end
+ own(Discord.Activated:Connect(function()
+  local copied=false;pcall(function()if setclipboard then setclipboard(invite);copied=true elseif toclipboard then toclipboard(invite);copied=true end end)
+  window:Notify({Title="ScoopHub",Description="Discord",Content=copied and ("Copied to clipboard: "..invite) or "Clipboard is unavailable in this executor.",Delay=5},true)
+ end))
+
+ local minimized=false;local expanded=Holder.Position;local miniPos=nil
+ local Mini=C(N("TextButton",{Name="MiniLauncher",Visible=false,Text="",AutoButtonColor=false,AnchorPoint=Vector2.new(.5,.5),Position=Holder.Position,Size=UDim2.fromOffset(48,48),BackgroundColor3=T.Bg,BackgroundTransparency=.03,BorderSizePixel=0,ZIndex=500},SG),12);S(Mini,T.Red,.35,1)
+ N("ImageLabel",{Image=cfg.Logo or "rbxassetid://90541504618217",BackgroundTransparency=1,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(36,36),ZIndex=501},Mini)
+ local function miniDefault()local c=workspace.CurrentCamera;if not c then return expanded end;local v=c.ViewportSize;local p=Min.AbsolutePosition;local s=Min.AbsoluteSize;return UDim2.fromOffset(math.clamp(p.X+s.X/2,28,v.X-28),math.clamp(p.Y+s.Y/2,28,v.Y-28))end
+ local function setMin(v)minimized=v==true;if minimized then expanded=Holder.Position;if not miniPos then miniPos=miniDefault()end;Mini.Position=miniPos;Mini.Visible=true;Body.Visible=false;Holder.Visible=false;Min.Text="+"else miniPos=Mini.Position;Holder.Position=expanded;Holder.Visible=true;Body.Visible=true;Mini.Visible=false;Min.Text="-"end end
+ own(Min.Activated:Connect(function()setMin(not minimized)end))
+ local dh,dm=false,false;local moved=false;local sm,sp;local touch=nil
+ own(Header.InputBegan:Connect(function(i)if minimized then return end;if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dh=true;dm=false;touch=i.UserInputType==Enum.UserInputType.Touch and i or nil;sm=i.Position;sp=Holder.Position end end))
+ own(Mini.InputBegan:Connect(function(i)if not minimized then return end;if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dm=true;dh=false;moved=false;touch=i.UserInputType==Enum.UserInputType.Touch and i or nil;sm=i.Position;sp=Mini.Position end end))
+ own(Mini.Activated:Connect(function()if minimized and not moved then setMin(false)end end))
+ own(UIS.InputEnded:Connect(function(i)local a=i.UserInputType==Enum.UserInputType.MouseButton1;local b=i.UserInputType==Enum.UserInputType.Touch and i==touch;if a or b then dm=false;dh=false;touch=nil end end))
+ own(UIS.InputChanged:Connect(function(i)
+  local mm=i.UserInputType==Enum.UserInputType.MouseMovement and touch==nil;local mt=i.UserInputType==Enum.UserInputType.Touch and i==touch
+  if not(mm or mt)or not(dh or dm)then return end;local d=i.Position-sm;local cam=workspace.CurrentCamera;if not cam then return end;local v=cam.ViewportSize
+  local bx=v.X*sp.X.Scale+sp.X.Offset+d.X;local by=v.Y*sp.Y.Scale+sp.Y.Offset+d.Y
+  if dm then if d.Magnitude>=6 then moved=true end;Mini.Position=UDim2.fromOffset(math.clamp(bx,28,v.X-28),math.clamp(by,28,v.Y-28));miniPos=Mini.Position
+  else local sw,sh=W*Scale.Scale,H*Scale.Scale;Holder.Position=UDim2.fromOffset(math.clamp(bx,sw/2+4,v.X-sw/2-4),math.clamp(by,sh/2+4,v.Y-sh/2-4));expanded=Holder.Position end
+ end))
+
+ function window:Destroy()
+  if self.Closed then return end;self.Closed=true;Library.Unloaded=true
+  for i=#conns,1,-1 do pcall(function()conns[i]:Disconnect()end);conns[i]=nil end
+  if SG.Parent then SG:Destroy()end
+ end
+ own(Close.Activated:Connect(function()if type(cfg.OnClose)=="function"then pcall(cfg.OnClose)end;window:Destroy()end))
+ return window
 end
 
 function Library:SetNotification(info)
-    local window =
-        self._LastWindow
-
-    if window
-        and not window.Closed
-        and type(window.Notify)
-            == "function"
-    then
-        window:Notify(
-            info,
-            false
-        )
-    end
+ local w=self._LastWindow;if w and not w.Closed then w:Notify(info,false)end
 end
 
-return setmetatable({}, Library)
+return Library
