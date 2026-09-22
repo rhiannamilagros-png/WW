@@ -6,7 +6,7 @@ local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_AUTOMATION_BORDER_FIX"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_SCROLL_GUTTER_FIX"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -204,6 +204,7 @@ function Library:CreateWindow(cfg)
    self.StatusLabel=label(P,self.Status,UDim2.new(.5,0,0,1),UDim2.new(.5,-8,0,20),10,T.Success,T.Font,Enum.TextXAlignment.Right)
    self.Scroll=N("ScrollingFrame",{Name=name.."Scroll",Position=UDim2.new(0,0,0,24),Size=UDim2.new(1,-8,1,-24),
     BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),ScrollBarThickness=4,ScrollBarImageColor3=T.Red,
+    VerticalScrollBarPosition=Enum.VerticalScrollBarPosition.Right,
     ClipsDescendants=true},P)
   end
   function tab:_reflow()
@@ -211,13 +212,16 @@ function Library:CreateWindow(cfg)
    local y={Left=0,Right=0}
    for _,s in ipairs(self.Sections) do
     local right=s.Column=="Right";local py=y[s.Column]
-    s.Card.Position=right and UDim2.new(.5,4,0,py) or UDim2.new(0,1,0,py)
-
     if right then
-     -- Keep the right-side card stroke away from the clipped scroll edge.
-     s.Card.Size=UDim2.new(.5,-9,0,s.Height)
+     -- Reserve 12px on the right for the scrollbar + breathing room.
+     -- Right edge becomes ScrollWidth - 12px.
+     s.Card.Position=UDim2.new(.5,-2,0,py)
+     s.Card.Size=UDim2.new(.5,-10,0,s.Height)
     else
-     s.Card.Size=UDim2.new(.5,-5,0,s.Height)
+     -- Keep both columns nearly the same width while preserving
+     -- an 8px center gap.
+     s.Card.Position=UDim2.new(0,1,0,py)
+     s.Card.Size=UDim2.new(.5,-11,0,s.Height)
     end
     y[s.Column]=py+s.Height+10
    end
@@ -848,3 +852,6 @@ function Library:SetNotification(info)
 end
 
 return Library
+
+
+--dasdad
