@@ -6,7 +6,7 @@ local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_PLANT_DROPDOWN_SCROLL_CLOSE"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_ANCHORED_DROPDOWN"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -287,93 +287,793 @@ function Library:CreateWindow(cfg)
    end
 
    function sec:AddDropdown(x)
-    x=x or {};local y=self.Y;local title=tostring(x.Title or "Dropdown")
-    label(card,title,UDim2.new(0,10,0,y),UDim2.new(1,-20,0,14),10,T.Muted,T.Font)
-    local selector=C(N("TextButton",{Text="",Font=T.Body,TextSize=11,TextColor3=T.White,TextXAlignment=Enum.TextXAlignment.Left,
-     TextTruncate=Enum.TextTruncate.AtEnd,BackgroundColor3=T.Input,BorderSizePixel=0,AutoButtonColor=false,
-     Position=UDim2.new(0,10,0,y+17),Size=UDim2.new(1,-20,0,27),ClipsDescendants=true,ZIndex=5},card),5)
+    x=x or {}
+    local y=self.Y
+    local title=tostring(x.Title or "Dropdown")
+
+    label(
+     card,
+     title,
+     UDim2.new(0,10,0,y),
+     UDim2.new(1,-20,0,14),
+     10,
+     T.Muted,
+     T.Font
+    )
+
+    local selector=C(N("TextButton",{
+     Text="",
+     Font=T.Body,
+     TextSize=11,
+     TextColor3=T.White,
+     TextXAlignment=Enum.TextXAlignment.Left,
+     TextTruncate=Enum.TextTruncate.AtEnd,
+     BackgroundColor3=T.Input,
+     BorderSizePixel=0,
+     AutoButtonColor=false,
+     Position=UDim2.new(0,10,0,y+17),
+     Size=UDim2.new(1,-20,0,27),
+     ClipsDescendants=true,
+     ZIndex=5
+    },card),5)
+
     S(selector,T.Stroke,.82,1)
-    local multi=x.Multi==true;local options=norm(x.Options or {});local selected=norm(x.Default or {})
-    if not multi and #selected>1 then selected={selected[1]} end
-    local empty=x.EmptyText or x.Placeholder or "Select options..."
-    local st=N("TextLabel",{Text=fmt(selected,empty),Font=T.Body,TextSize=12,TextColor3=T.White,TextXAlignment=Enum.TextXAlignment.Left,
-     TextTruncate=Enum.TextTruncate.AtEnd,BackgroundTransparency=1,Position=UDim2.new(0,8,0,0),Size=UDim2.new(1,-28,1,0),ZIndex=6},selector)
-    local ch=N("Frame",{BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.new(1,-20,.5,-5),Size=UDim2.fromOffset(14,10),ZIndex=6},selector)
-    N("Frame",{BackgroundColor3=T.Muted,BorderSizePixel=0,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,-2,.5,0),Size=UDim2.fromOffset(7,2),Rotation=45,ZIndex=7},ch)
-    N("Frame",{BackgroundColor3=T.Muted,BorderSizePixel=0,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,2,.5,0),Size=UDim2.fromOffset(7,2),Rotation=-45,ZIndex=7},ch)
-    local pop=C(N("Frame",{Visible=false,BackgroundColor3=T.Surface2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=800},P),6);S(pop,T.Red,0,1.5)
-    local sb=C(N("TextBox",{Text="",PlaceholderText=x.SearchPlaceholder or "Search...",Font=T.Body,TextSize=12,TextColor3=T.White,PlaceholderColor3=T.Muted,
-     TextXAlignment=Enum.TextXAlignment.Left,BackgroundColor3=T.Surface3,BorderSizePixel=0,ClearTextOnFocus=false,
-     Position=UDim2.new(0,4,0,4),Size=UDim2.new(1,-8,0,26),ZIndex=801},pop),5)
-    N("UIPadding",{PaddingLeft=UDim.new(0,8)},sb)
-    local acts=N("Frame",{BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.new(0,4,0,34),Size=UDim2.new(1,-8,0,26),Visible=multi,ZIndex=801},pop)
-    local all=btn(acts,"SELECT ALL",UDim2.new(),UDim2.new(.5,-2,1,0),T.RedDark);all.TextSize=11;all.ZIndex=802
-    local clear=btn(acts,"CLEAR ALL",UDim2.new(.5,2,0,0),UDim2.new(.5,-2,1,0),T.Surface3);clear.TextSize=11;clear.ZIndex=802
-    local scroll=N("ScrollingFrame",{BackgroundTransparency=1,BorderSizePixel=0,
-     Position=UDim2.new(0,4,0,multi and 64 or 34),Size=UDim2.new(1,-8,1,multi and -68 or -38),
-     CanvasSize=UDim2.new(),ScrollBarThickness=3,ScrollBarImageColor3=T.Red,
-     ScrollingDirection=Enum.ScrollingDirection.Y,ZIndex=801},pop)
-    local lay=N("UIListLayout",{Padding=UDim.new(0,2),SortOrder=Enum.SortOrder.LayoutOrder},scroll)
-    local api={};local rows={}
-    local function fire() if type(x.Callback)=="function" then x.Callback(multi and norm(selected) or selected[1]) end end
-    local function upd()st.Text=fmt(selected,empty)end
-    local function rebuild()
-     for _,c in ipairs(rows) do if c.Parent then c:Destroy() end end;table.clear(rows)
-     local q=string.lower(sb.Text or "");local n=0
-     for _,o in ipairs(options) do if q=="" or string.find(string.lower(o),q,1,true) then
-      n+=1;local on=has(selected,o)
-      local r=C(N("TextButton",{Text="",BackgroundColor3=on and Color3.fromRGB(55,22,30) or T.Surface2,BorderSizePixel=0,
-       AutoButtonColor=false,Size=UDim2.new(1,0,0,34),LayoutOrder=n,ZIndex=802},scroll),4);rows[#rows+1]=r
-      label(r,on and "✓" or "",UDim2.new(0,8,0,0),UDim2.fromOffset(18,34),14,T.Success,T.Font,Enum.TextXAlignment.Left).ZIndex=803
-      label(r,o,UDim2.new(0,28,0,0),UDim2.new(1,-36,1,0),12,T.White,T.Body).ZIndex=803
-      own(r.Activated:Connect(function()
-       if multi then
-        if has(selected,o) then local z={} for _,v in ipairs(selected) do if v~=o then z[#z+1]=v end end selected=z else selected[#selected+1]=o end
-        upd();rebuild();fire()
-       else selected={o};upd();fire();pop.Visible=false;tw(ch,{Rotation=0},.14) end
-      end))
-     end end
-     scroll.CanvasSize=UDim2.new(0,0,0,lay.AbsoluteContentSize.Y+4)
-    end
-    function api:Open()
-     local a=selector.AbsolutePosition;local p=P.AbsolutePosition
-     local w=math.max(180,selector.AbsoluteSize.X)
-     local visibleRows=math.max(1,math.min(#options,6))
-     local h=(multi and 64 or 34)+(visibleRows*36)+4
-     pop.Position=UDim2.fromOffset(a.X-p.X,a.Y-p.Y+selector.AbsoluteSize.Y+4)
-     pop.Size=UDim2.fromOffset(w,math.min(h,284))
-     sb.Text="";rebuild();pop.Visible=true;tw(ch,{Rotation=180},.14)
-    end
-    function api:Close()pop.Visible=false;tw(ch,{Rotation=0},.14)end
-    function api:Set(v,firecb)selected=norm(v);if not multi and #selected>1 then selected={selected[1]} end;upd();if pop.Visible then rebuild() end;if firecb==true then fire()end end
-    function api:Get()return multi and norm(selected) or selected[1]end
-    function api:SetOptions(v,preserve)options=norm(v);if preserve~=true then selected={} else local z={} for _,i in ipairs(selected)do if has(options,i)then z[#z+1]=i end end selected=z end;upd();if pop.Visible then rebuild()end end
-    function api:Refresh(v,s)if v~=nil then options=norm(v)end;if s~=nil then selected=norm(s)end;if not multi and #selected>1 then selected={selected[1]}end;upd();if pop.Visible then rebuild()end end
-    own(selector.Activated:Connect(function()if pop.Visible then api:Close()else api:Open()end end))
-    own(sb:GetPropertyChangedSignal("Text"):Connect(rebuild))
-    own(all.Activated:Connect(function()if multi then selected=norm(options);upd();rebuild();fire()end end))
-    own(clear.Activated:Connect(function()selected={};upd();rebuild();fire()end))
 
-    -- Match the original Plant Location picker:
-    -- a dropdown is anchored to the selector's current screen position.
-    -- As soon as the parent tab scrolls, close it instead of leaving a
-    -- floating popup behind at the old position.
-    if tab.Scroll then
-     own(tab.Scroll:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-      if pop.Visible then
-       api:Close()
+    local multi=x.Multi==true
+    local singleSelect=not multi
+    local options=norm(x.Options or {})
+    local selected=norm(x.Default or {})
+
+    if singleSelect and #selected>1 then
+     selected={selected[1]}
+    end
+
+    local empty=x.EmptyText or x.Placeholder or "Select..."
+    local searchPlaceholder=x.SearchPlaceholder or "Search..."
+
+    local selectorText=N("TextLabel",{
+     Name="CompactSelectorText",
+     Text=fmt(selected,empty),
+     Font=T.Body,
+     TextSize=12,
+     TextColor3=T.White,
+     TextXAlignment=Enum.TextXAlignment.Left,
+     TextTruncate=Enum.TextTruncate.AtEnd,
+     BackgroundTransparency=1,
+     Position=UDim2.new(0,8,0,0),
+     Size=UDim2.new(1,-28,1,0),
+     ZIndex=6
+    },selector)
+
+    local selectorChevron=N("Frame",{
+     Name="CompactSelectorChevron",
+     BackgroundTransparency=1,
+     BorderSizePixel=0,
+     Position=UDim2.new(1,-20,.5,-5),
+     Size=UDim2.fromOffset(14,10),
+     Rotation=0,
+     ZIndex=6
+    },selector)
+
+    N("Frame",{
+     Name="ChevronLeft",
+     BackgroundColor3=T.Muted,
+     BorderSizePixel=0,
+     AnchorPoint=Vector2.new(.5,.5),
+     Position=UDim2.new(.5,-2,.5,0),
+     Size=UDim2.fromOffset(7,2),
+     Rotation=45,
+     ZIndex=7
+    },selectorChevron)
+
+    N("Frame",{
+     Name="ChevronRight",
+     BackgroundColor3=T.Muted,
+     BorderSizePixel=0,
+     AnchorPoint=Vector2.new(.5,.5),
+     Position=UDim2.new(.5,2,.5,0),
+     Size=UDim2.fromOffset(7,2),
+     Rotation=-45,
+     ZIndex=7
+    },selectorChevron)
+
+    local function setChevron(open,instant)
+     local rotation=open and 180 or 0
+
+     if instant then
+      selectorChevron.Rotation=rotation
+     else
+      tw(selectorChevron,{Rotation=rotation},.14)
+     end
+    end
+
+    -- Match the reference Plant/Automation picker: popup belongs to the PAGE,
+    -- not the scrolling card, so it can float over nearby cards without being
+    -- clipped by them.
+    local pop=C(N("Frame",{
+     Name="CompactAutomationDropdown",
+     Visible=false,
+     BackgroundColor3=T.Surface2,
+     BorderSizePixel=0,
+     ClipsDescendants=true,
+     Position=UDim2.fromOffset(0,0),
+     Size=UDim2.fromOffset(230,240),
+     ZIndex=800
+    },P),6)
+
+    S(pop,T.Red,0,1.5)
+
+    local sb=C(N("TextBox",{
+     Name="CompactAutomationSearch",
+     Text="",
+     PlaceholderText=searchPlaceholder,
+     Font=T.Body,
+     TextSize=12,
+     TextColor3=T.White,
+     PlaceholderColor3=T.Muted,
+     TextXAlignment=Enum.TextXAlignment.Left,
+     BackgroundColor3=T.Surface3,
+     BorderSizePixel=0,
+     ClearTextOnFocus=false,
+     Position=UDim2.new(0,4,0,4),
+     Size=UDim2.new(1,-8,0,26),
+     ZIndex=801
+    },pop),5)
+
+    N("UIPadding",{
+     PaddingLeft=UDim.new(0,8)
+    },sb)
+
+    local acts=N("Frame",{
+     Name="CompactAutomationActions",
+     BackgroundTransparency=1,
+     BorderSizePixel=0,
+     Position=UDim2.new(0,4,0,34),
+     Size=UDim2.new(1,-8,0,26),
+     Visible=multi,
+     ZIndex=801
+    },pop)
+
+    local all=btn(
+     acts,
+     "SELECT ALL",
+     UDim2.new(),
+     UDim2.new(.5,-2,1,0),
+     T.RedDark
+    )
+    all.TextSize=11
+    all.ZIndex=802
+
+    local clear=btn(
+     acts,
+     "CLEAR ALL",
+     UDim2.new(.5,2,0,0),
+     UDim2.new(.5,-2,1,0),
+     T.Surface3
+    )
+    clear.TextSize=11
+    clear.ZIndex=802
+
+    local scroll=N("ScrollingFrame",{
+     Name="CompactAutomationScroll",
+     BackgroundTransparency=1,
+     BorderSizePixel=0,
+     Position=UDim2.new(
+      0,
+      4,
+      0,
+      singleSelect and 34 or 64
+     ),
+     Size=UDim2.new(
+      1,
+      -8,
+      1,
+      singleSelect and -38 or -68
+     ),
+     CanvasSize=UDim2.new(),
+     ScrollBarThickness=3,
+     ScrollBarImageColor3=T.Red,
+     ScrollingDirection=Enum.ScrollingDirection.Y,
+     ZIndex=801
+    },pop)
+
+    local lay=N("UIListLayout",{
+     Padding=UDim.new(0,2),
+     SortOrder=Enum.SortOrder.LayoutOrder
+    },scroll)
+
+    local api={}
+    local rows={}
+    local maxVisibleRows=6
+    local rowHeight=34
+    local headerHeight=singleSelect and 34 or 64
+    local desiredHeight=240
+    local currentWidth=230
+    local openState=false
+    local updatePosition
+
+    local function fire()
+     if type(x.Callback)=="function" then
+      x.Callback(
+       multi and norm(selected) or selected[1]
+      )
+     end
+    end
+
+    local function upd()
+     selectorText.Text=fmt(selected,empty)
+    end
+
+    local function pointInside(gui,point)
+     if not gui or not gui.Visible then
+      return false
+     end
+
+     local pos=gui.AbsolutePosition
+     local size=gui.AbsoluteSize
+
+     return point.X>=pos.X
+      and point.X<=pos.X+size.X
+      and point.Y>=pos.Y
+      and point.Y<=pos.Y+size.Y
+    end
+
+    local function selectorVisibleInScroll()
+     if not tab.Scroll
+      or not tab.Scroll.Parent
+      or not selector.Parent
+     then
+      return false
+     end
+
+     local selectorPos=selector.AbsolutePosition
+     local selectorSize=selector.AbsoluteSize
+     local scrollPos=tab.Scroll.AbsolutePosition
+     local scrollSize=tab.Scroll.AbsoluteSize
+
+     local selectorLeft=selectorPos.X
+     local selectorRight=selectorPos.X+selectorSize.X
+     local selectorTop=selectorPos.Y
+     local selectorBottom=selectorPos.Y+selectorSize.Y
+
+     local scrollLeft=scrollPos.X
+     local scrollRight=scrollPos.X+scrollSize.X
+     local scrollTop=scrollPos.Y
+     local scrollBottom=scrollPos.Y+scrollSize.Y
+
+     return selectorRight>scrollLeft
+      and selectorLeft<scrollRight
+      and selectorBottom>scrollTop
+      and selectorTop<scrollBottom
+    end
+
+    function api:Close()
+     pop.Visible=false
+     openState=false
+     setChevron(false,false)
+
+     if window._ActiveDropdown==pop then
+      window._ActiveDropdown=nil
+      window._ActiveDropdownClose=nil
+      window._ActiveDropdownChevron=nil
+     end
+    end
+
+    updatePosition=function()
+     if not pop.Visible
+      or not selector.Parent
+      or not P.Parent
+     then
+      return
+     end
+
+     -- If scrolling moved the selector completely outside the visible
+     -- ScrollingFrame, close instead of leaving an orphan popup on-screen.
+     if tab.Scroll and not selectorVisibleInScroll() then
+      api:Close()
+      return
+     end
+
+     local ok=pcall(function()
+      local scaleValue=math.max(
+       tonumber(Scale.Scale) or 1,
+       .01
+      )
+
+      local basePos=P.AbsolutePosition
+      local baseSize=P.AbsoluteSize
+      local buttonPos=selector.AbsolutePosition
+      local buttonSize=selector.AbsoluteSize
+
+      local pageWidth=baseSize.X/scaleValue
+      local pageHeight=baseSize.Y/scaleValue
+
+      local buttonX=
+       (buttonPos.X-basePos.X)/scaleValue
+
+      local buttonTop=
+       (buttonPos.Y-basePos.Y)/scaleValue
+
+      local buttonHeight=
+       buttonSize.Y/scaleValue
+
+      local buttonBottom=
+       buttonTop+buttonHeight
+
+      local margin=4
+
+      currentWidth=
+       buttonSize.X/scaleValue
+
+      -- Keep the picker horizontally aligned with the selector but clamp it
+      -- inside the visible page.
+      local px=math.clamp(
+       buttonX,
+       margin,
+       math.max(
+        margin,
+        pageWidth-currentWidth-margin
+       )
+      )
+
+      local availableBelow=
+       math.max(
+        0,
+        pageHeight-buttonBottom-margin
+       )
+
+      local availableAbove=
+       math.max(
+        0,
+        buttonTop-margin
+       )
+
+      -- Same logic as the reference: prefer below, automatically flip above
+      -- when there is not enough room underneath.
+      local openAbove=
+       desiredHeight>availableBelow
+       and availableAbove>availableBelow
+
+      local availableHeight=
+       openAbove
+       and availableAbove
+       or availableBelow
+
+      local actualHeight=
+       math.min(
+        desiredHeight,
+        availableHeight
+       )
+
+      -- Tiny/scaled windows: use whichever side genuinely has more room.
+      if actualHeight<100 then
+       if availableAbove>availableBelow then
+        openAbove=true
+        availableHeight=availableAbove
+       else
+        openAbove=false
+        availableHeight=availableBelow
+       end
+
+       actualHeight=
+        math.min(
+         desiredHeight,
+         availableHeight
+        )
       end
-     end))
+
+      actualHeight=
+       math.max(
+        0,
+        actualHeight
+       )
+
+      local py
+
+      if openAbove then
+       py=
+        buttonTop
+        -actualHeight
+        -margin
+      else
+       py=
+        buttonBottom
+        +margin
+      end
+
+      py=math.clamp(
+       py,
+       margin,
+       math.max(
+        margin,
+        pageHeight-actualHeight-margin
+       )
+      )
+
+      pop.Position=
+       UDim2.fromOffset(
+        px,
+        py
+       )
+
+      pop.Size=
+       UDim2.fromOffset(
+        currentWidth,
+        actualHeight
+       )
+     end)
+
+     if not ok then
+      pop.Position=
+       UDim2.fromOffset(
+        10,
+        72
+       )
+
+      pop.Size=
+       UDim2.fromOffset(
+        currentWidth,
+        desiredHeight
+       )
+     end
     end
 
-    -- Also close it when switching away from this tab.
-    own(P:GetPropertyChangedSignal("Visible"):Connect(function()
-     if not P.Visible and pop.Visible then
+    local function resizeDropdown(matchCount)
+     local visibleRows=
+      math.clamp(
+       matchCount,
+       1,
+       maxVisibleRows
+      )
+
+     desiredHeight=
+      headerHeight
+      +(visibleRows*(rowHeight+2))
+      +4
+
+     if pop.Visible then
+      updatePosition()
+     else
+      pop.Size=
+       UDim2.fromOffset(
+        currentWidth,
+        desiredHeight
+       )
+     end
+    end
+
+    local function clearRows()
+     for _,c in ipairs(rows) do
+      if c.Parent then
+       c:Destroy()
+      end
+     end
+
+     table.clear(rows)
+    end
+
+    local function rebuild()
+     clearRows()
+
+     local q=
+      string.lower(
+       sb.Text or ""
+      )
+
+     local n=0
+
+     for _,o in ipairs(options) do
+      if q==""
+       or string.find(
+        string.lower(o),
+        q,
+        1,
+        true
+       )
+      then
+       n+=1
+
+       local on=has(selected,o)
+
+       local r=C(N("TextButton",{
+        Text="",
+        BackgroundColor3=
+         on
+         and Color3.fromRGB(55,22,30)
+         or T.Surface2,
+        BorderSizePixel=0,
+        AutoButtonColor=false,
+        Size=UDim2.new(1,0,0,rowHeight),
+        LayoutOrder=n,
+        ZIndex=802
+       },scroll),4)
+
+       rows[#rows+1]=r
+
+       label(
+        r,
+        on and "✓" or "",
+        UDim2.new(0,8,0,0),
+        UDim2.fromOffset(18,rowHeight),
+        14,
+        T.Success,
+        T.Font,
+        Enum.TextXAlignment.Left
+       ).ZIndex=803
+
+       label(
+        r,
+        o,
+        UDim2.new(0,28,0,0),
+        UDim2.new(1,-36,1,0),
+        12,
+        T.White,
+        T.Body
+       ).ZIndex=803
+
+       own(r.MouseEnter:Connect(function()
+        if not has(selected,o) then
+         tw(
+          r,
+          {BackgroundColor3=T.RedDark},
+          .08
+         )
+        end
+       end))
+
+       own(r.MouseLeave:Connect(function()
+        r.BackgroundColor3=
+         has(selected,o)
+         and Color3.fromRGB(55,22,30)
+         or T.Surface2
+       end))
+
+       own(r.Activated:Connect(function()
+        if multi then
+         if has(selected,o) then
+          local z={}
+
+          for _,v in ipairs(selected) do
+           if v~=o then
+            z[#z+1]=v
+           end
+          end
+
+          selected=z
+         else
+          selected[#selected+1]=o
+         end
+
+         upd()
+         rebuild()
+         fire()
+        else
+         selected={o}
+         upd()
+         fire()
+         api:Close()
+        end
+       end))
+      end
+     end
+
+     scroll.CanvasSize=
+      UDim2.new(
+       0,
+       0,
+       0,
+       lay.AbsoluteContentSize.Y+4
+      )
+
+     resizeDropdown(
+      math.max(n,1)
+     )
+    end
+
+    function api:Open()
+     -- Never allow two floating pickers to overlap. This is important when
+     -- selectors in opposite columns are both visible.
+     if window._ActiveDropdown
+      and window._ActiveDropdown~=pop
+      and type(window._ActiveDropdownClose)=="function"
+     then
+      window._ActiveDropdownClose()
+     end
+
+     window._ActiveDropdown=pop
+     window._ActiveDropdownClose=function()
+      api:Close()
+     end
+     window._ActiveDropdownChevron=selectorChevron
+
+     sb.Text=""
+     rebuild()
+
+     pop.Visible=true
+     openState=true
+     setChevron(true,false)
+
+     -- Position after becoming visible so AbsoluteSize is valid.
+     task.defer(function()
+      if pop.Visible then
+       updatePosition()
+      end
+     end)
+    end
+
+    function api:Set(v,firecb)
+     selected=norm(v)
+
+     if singleSelect and #selected>1 then
+      selected={selected[1]}
+     end
+
+     upd()
+
+     if pop.Visible then
+      rebuild()
+     end
+
+     if firecb==true then
+      fire()
+     end
+    end
+
+    function api:Get()
+     return multi
+      and norm(selected)
+      or selected[1]
+    end
+
+    function api:SetOptions(v,preserve)
+     options=norm(v)
+
+     if preserve~=true then
+      selected={}
+     else
+      local z={}
+
+      for _,i in ipairs(selected) do
+       if has(options,i) then
+        z[#z+1]=i
+       end
+      end
+
+      selected=z
+     end
+
+     upd()
+
+     if pop.Visible then
+      rebuild()
+     end
+    end
+
+    function api:Refresh(v,s)
+     if v~=nil then
+      options=norm(v)
+     end
+
+     if s~=nil then
+      selected=norm(s)
+     end
+
+     if singleSelect and #selected>1 then
+      selected={selected[1]}
+     end
+
+     upd()
+
+     if pop.Visible then
+      rebuild()
+     end
+    end
+
+    own(selector.Activated:Connect(function()
+     if openState then
+      api:Close()
+     else
+      api:Open()
+     end
+    end))
+
+    own(sb:GetPropertyChangedSignal("Text"):Connect(function()
+     rebuild()
+    end))
+
+    own(all.Activated:Connect(function()
+     if multi then
+      selected=norm(options)
+      upd()
+      rebuild()
+      fire()
+     end
+    end))
+
+    own(clear.Activated:Connect(function()
+     if multi then
+      selected={}
+      upd()
+      rebuild()
+      fire()
+     end
+    end))
+
+    -- Requested behavior: keep the popup anchored while the tab scrolls.
+    -- The reference closes here; this library instead reuses the reference's
+    -- positioning math so the popup follows the selector smoothly.
+    if tab.Scroll then
+     own(
+      tab.Scroll:
+       GetPropertyChangedSignal(
+        "CanvasPosition"
+       ):
+       Connect(function()
+        if pop.Visible then
+         updatePosition()
+        end
+       end)
+     )
+    end
+
+    -- If responsive scaling changes while open, recalc the anchor.
+    own(
+     Scale:
+      GetPropertyChangedSignal(
+       "Scale"
+      ):
+      Connect(function()
+       if pop.Visible then
+        updatePosition()
+       end
+      end)
+    )
+
+    -- Tab change = close.
+    own(
+     P:
+      GetPropertyChangedSignal(
+       "Visible"
+      ):
+      Connect(function()
+       if not P.Visible
+        and pop.Visible
+       then
+        api:Close()
+       end
+      end)
+    )
+
+    -- Click/tap outside = close.
+    own(UIS.InputBegan:Connect(function(input)
+     if not pop.Visible then
+      return
+     end
+
+     if input.UserInputType
+         ~=Enum.UserInputType.MouseButton1
+      and input.UserInputType
+         ~=Enum.UserInputType.Touch
+     then
+      return
+     end
+
+     local point=input.Position
+
+     if not pointInside(pop,point)
+      and not pointInside(selector,point)
+     then
       api:Close()
      end
     end))
 
-    self.Y=y+52;grow();search(title,selector);return api
+    upd()
+
+    self.Y=y+52
+    grow()
+    search(title,selector)
+
+    return api
    end
 
    tab:_reflow();return sec
