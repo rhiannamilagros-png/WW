@@ -6,7 +6,7 @@ local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_TAB_ORDER_FIX"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_SECRET_INPUT_FIX"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -319,12 +319,33 @@ function Library:CreateWindow(cfg)
    function sec:AddInput(x)
     x=x or {};local y=self.Y;local title=tostring(x.Title or "Input")
     label(card,title,UDim2.new(0,10,0,y),UDim2.new(1,-20,0,14),10,T.Muted,T.Font)
+    local masked=x.Masked==true or x.Secret==true
     local b=C(N("TextBox",{Text=tostring(x.Default or ""),PlaceholderText=x.Placeholder or "Input value",ClearTextOnFocus=false,
      Font=T.Font,TextSize=11,TextColor3=T.White,PlaceholderColor3=T.Muted,TextXAlignment=Enum.TextXAlignment.Left,
      BackgroundColor3=T.Input,BorderSizePixel=0,Position=UDim2.new(0,10,0,y+17),Size=UDim2.new(1,-20,0,27)},card),5)
     N("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8)},b);S(b,T.Stroke,.82,1)
+    local mask
+    if masked then
+     b.TextTransparency=1
+     mask=label(b,"",UDim2.new(0,8,0,0),UDim2.new(1,-16,1,0),11,T.White,T.Font)
+     mask.ZIndex=b.ZIndex+1
+     mask.Active=false
+     local function refreshMask()
+      local value=tostring(b.Text or "")
+      if value=="" then
+       mask.Text=""
+      else
+       local shown=x.MaskText or "••••••••••••••••••••"
+       mask.Text=tostring(shown)
+      end
+     end
+     own(b:GetPropertyChangedSignal("Text"):Connect(refreshMask))
+     own(b.Focused:Connect(refreshMask))
+     own(b.FocusLost:Connect(refreshMask))
+     refreshMask()
+    end
     own(b.FocusLost:Connect(function(e) if type(x.Callback)=="function" then x.Callback(b.Text,b,e) end end))
-    local api={Box=b};function api:Set(v,fire)b.Text=tostring(v or "");if fire==true and type(x.Callback)=="function" then x.Callback(b.Text,b,false) end end
+    local api={Box=b,Mask=mask};function api:Set(v,fire)b.Text=tostring(v or "");if fire==true and type(x.Callback)=="function" then x.Callback(b.Text,b,false) end end
     function api:Get()return b.Text end
     self.Y=y+52;grow();search(title,b);return api
    end
