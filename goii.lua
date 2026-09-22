@@ -6,7 +6,7 @@ local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_PLANT_PICKER_STYLE"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_PLANT_PICKER_STYLE_FIX"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -489,6 +489,7 @@ function Library:CreateWindow(cfg)
      SortOrder=Enum.SortOrder.LayoutOrder
     },itemScroll)
 
+    local api={}
     local maxVisibleRows=6
     local rowHeight=34
     local headerHeight=singleSelect and 34 or 64
@@ -1452,7 +1453,4 @@ function Library:SetNotification(info)
 end
 
 return Library
-
-
-
---faeduohfae
+-- dasd
