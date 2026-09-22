@@ -6,7 +6,7 @@ local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_SCROLL_GUTTER_FIX"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_DROPDOWN_FIX"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -97,6 +97,14 @@ function Library:CreateWindow(cfg)
  N("UIGradient",{Color=ColorSequence.new({
   ColorSequenceKeypoint.new(0,T.Top),ColorSequenceKeypoint.new(.52,T.Mid),ColorSequenceKeypoint.new(1,T.Low)
  }),Rotation=16},Main)
+
+ local OverlayLayer=N("Frame",{
+  Name="ScoopHubOverlayLayer",
+  Size=UDim2.fromScale(1,1),
+  BackgroundTransparency=1,
+  BorderSizePixel=0,
+  ZIndex=700,
+ },Main)
 
  local mobile=UIS.TouchEnabled and (not UIS.KeyboardEnabled or not UIS.MouseEnabled)
  local function resize()
@@ -289,66 +297,375 @@ function Library:CreateWindow(cfg)
    function sec:AddDropdown(x)
     x=x or {};local y=self.Y;local title=tostring(x.Title or "Dropdown")
     label(card,title,UDim2.new(0,10,0,y),UDim2.new(1,-20,0,14),10,T.Muted,T.Font)
-    local selector=C(N("TextButton",{Text="",Font=T.Body,TextSize=11,TextColor3=T.White,TextXAlignment=Enum.TextXAlignment.Left,
-     TextTruncate=Enum.TextTruncate.AtEnd,BackgroundColor3=T.Input,BorderSizePixel=0,AutoButtonColor=false,
-     Position=UDim2.new(0,10,0,y+17),Size=UDim2.new(1,-20,0,27),ClipsDescendants=true,ZIndex=5},card),5)
+
+    local selector=C(N("TextButton",{
+     Text="",
+     Font=T.Body,
+     TextSize=11,
+     TextColor3=T.White,
+     TextXAlignment=Enum.TextXAlignment.Left,
+     TextTruncate=Enum.TextTruncate.AtEnd,
+     BackgroundColor3=T.Input,
+     BorderSizePixel=0,
+     AutoButtonColor=false,
+     Position=UDim2.new(0,10,0,y+17),
+     Size=UDim2.new(1,-20,0,27),
+     ClipsDescendants=true,
+     ZIndex=5
+    },card),5)
     S(selector,T.Stroke,.82,1)
-    local multi=x.Multi==true;local options=norm(x.Options or {});local selected=norm(x.Default or {})
+
+    local multi=x.Multi==true
+    local options=norm(x.Options or {})
+    local selected=norm(x.Default or {})
     if not multi and #selected>1 then selected={selected[1]} end
     local empty=x.EmptyText or x.Placeholder or "Select options..."
-    local st=N("TextLabel",{Text=fmt(selected,empty),Font=T.Body,TextSize=12,TextColor3=T.White,TextXAlignment=Enum.TextXAlignment.Left,
-     TextTruncate=Enum.TextTruncate.AtEnd,BackgroundTransparency=1,Position=UDim2.new(0,8,0,0),Size=UDim2.new(1,-28,1,0),ZIndex=6},selector)
-    local ch=N("Frame",{BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.new(1,-20,.5,-5),Size=UDim2.fromOffset(14,10),ZIndex=6},selector)
-    N("Frame",{BackgroundColor3=T.Muted,BorderSizePixel=0,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,-2,.5,0),Size=UDim2.fromOffset(7,2),Rotation=45,ZIndex=7},ch)
-    N("Frame",{BackgroundColor3=T.Muted,BorderSizePixel=0,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.5,2,.5,0),Size=UDim2.fromOffset(7,2),Rotation=-45,ZIndex=7},ch)
-    local pop=C(N("Frame",{Visible=false,BackgroundColor3=T.Surface2,BorderSizePixel=0,ClipsDescendants=true,ZIndex=800},P),6);S(pop,T.Red,.05,1.4)
-    local sb=C(N("TextBox",{Text="",PlaceholderText="Search...",Font=T.Body,TextSize=11,TextColor3=T.White,PlaceholderColor3=T.Muted,
-     BackgroundColor3=T.Input,BorderSizePixel=0,ClearTextOnFocus=false,Position=UDim2.new(0,8,0,8),Size=UDim2.new(1,-16,0,27),ZIndex=801},pop),5)
-    N("UIPadding",{PaddingLeft=UDim.new(0,8)},sb)
-    local acts=N("Frame",{BackgroundTransparency=1,Position=UDim2.new(0,8,0,42),Size=UDim2.new(1,-16,0,24),Visible=multi,ZIndex=801},pop)
-    local all=btn(acts,"SELECT ALL",UDim2.new(),UDim2.new(.5,-4,1,0),T.RedDark);all.ZIndex=802
-    local clear=btn(acts,"CLEAR ALL",UDim2.new(.5,4,0,0),UDim2.new(.5,-4,1,0),T.Surface3);clear.ZIndex=802
-    local scroll=N("ScrollingFrame",{BackgroundColor3=T.Bg,BackgroundTransparency=.08,BorderSizePixel=0,
-     Position=UDim2.new(0,8,0,multi and 73 or 42),Size=UDim2.new(1,-16,1,multi and -81 or -50),
-     CanvasSize=UDim2.new(),ScrollBarThickness=4,ScrollBarImageColor3=T.Red,ZIndex=801},pop);C(scroll,5)
+
+    local st=N("TextLabel",{
+     Text=fmt(selected,empty),
+     Font=T.Body,
+     TextSize=12,
+     TextColor3=T.White,
+     TextXAlignment=Enum.TextXAlignment.Left,
+     TextTruncate=Enum.TextTruncate.AtEnd,
+     BackgroundTransparency=1,
+     Position=UDim2.new(0,8,0,0),
+     Size=UDim2.new(1,-28,1,0),
+     ZIndex=6
+    },selector)
+
+    local ch=N("Frame",{
+     BackgroundTransparency=1,
+     BorderSizePixel=0,
+     Position=UDim2.new(1,-20,.5,-5),
+     Size=UDim2.fromOffset(14,10),
+     ZIndex=6
+    },selector)
+    N("Frame",{
+     BackgroundColor3=T.Muted,
+     BorderSizePixel=0,
+     AnchorPoint=Vector2.new(.5,.5),
+     Position=UDim2.new(.5,-2,.5,0),
+     Size=UDim2.fromOffset(7,2),
+     Rotation=45,
+     ZIndex=7
+    },ch)
+    N("Frame",{
+     BackgroundColor3=T.Muted,
+     BorderSizePixel=0,
+     AnchorPoint=Vector2.new(.5,.5),
+     Position=UDim2.new(.5,2,.5,0),
+     Size=UDim2.fromOffset(7,2),
+     Rotation=-45,
+     ZIndex=7
+    },ch)
+
+    local pop=C(N("Frame",{
+     Name="DropdownPopup",
+     Visible=false,
+     BackgroundColor3=Color3.fromRGB(35,10,16),
+     BorderSizePixel=0,
+     ClipsDescendants=true,
+     ZIndex=820
+    },OverlayLayer),6)
+    S(pop,T.Red,.05,1.25)
+    gradient(pop,Color3.fromRGB(48,16,24),Color3.fromRGB(27,8,13),90)
+
+    local sb=C(N("TextBox",{
+     Text="",
+     PlaceholderText=x.SearchPlaceholder or "Search...",
+     Font=T.Body,
+     TextSize=11,
+     TextColor3=T.White,
+     PlaceholderColor3=T.Muted,
+     BackgroundColor3=T.Input,
+     BorderSizePixel=0,
+     ClearTextOnFocus=false,
+     TextXAlignment=Enum.TextXAlignment.Left,
+     Position=UDim2.new(0,8,0,8),
+     Size=UDim2.new(1,-16,0,28),
+     ZIndex=821
+    },pop),5)
+    N("UIPadding",{PaddingLeft=UDim.new(0,9),PaddingRight=UDim.new(0,8)},sb)
+    S(sb,T.Line,.35,1)
+
+    local acts=N("Frame",{
+     BackgroundTransparency=1,
+     Position=UDim2.new(0,8,0,41),
+     Size=UDim2.new(1,-16,0,24),
+     Visible=multi,
+     ZIndex=821
+    },pop)
+    local all=btn(acts,"SELECT ALL",UDim2.new(),UDim2.new(.5,-4,1,0),T.RedDark);all.ZIndex=822
+    local clear=btn(acts,"CLEAR ALL",UDim2.new(.5,4,0,0),UDim2.new(.5,-4,1,0),T.Surface3);clear.ZIndex=822
+
+    local scroll=C(N("ScrollingFrame",{
+     BackgroundTransparency=1,
+     BorderSizePixel=0,
+     Position=UDim2.new(0,8,0,multi and 72 or 41),
+     Size=UDim2.new(1,-16,1,(multi and -80 or -49)),
+     CanvasSize=UDim2.new(),
+     ScrollBarThickness=4,
+     ScrollBarImageColor3=T.Red,
+     VerticalScrollBarPosition=Enum.VerticalScrollBarPosition.Right,
+     ZIndex=821
+    },pop),5)
+
     local lay=N("UIListLayout",{Padding=UDim.new(0,3),SortOrder=Enum.SortOrder.LayoutOrder},scroll)
-    local api={};local rows={}
-    local function fire() if type(x.Callback)=="function" then x.Callback(multi and norm(selected) or selected[1]) end end
-    local function upd()st.Text=fmt(selected,empty)end
+
+    local api={}
+    local rows={}
+    local popupOpen=false
+
+    local function fire()
+     if type(x.Callback)=="function" then
+      x.Callback(multi and norm(selected) or selected[1])
+     end
+    end
+
+    local function upd()
+     st.Text=fmt(selected,empty)
+    end
+
+    local function clearRows()
+     for _,c in ipairs(rows) do
+      if c.Parent then
+       c:Destroy()
+      end
+     end
+     table.clear(rows)
+    end
+
     local function rebuild()
-     for _,c in ipairs(rows) do if c.Parent then c:Destroy() end end;table.clear(rows)
-     local q=string.lower(sb.Text or "");local n=0
-     for _,o in ipairs(options) do if q=="" or string.find(string.lower(o),q,1,true) then
-      n+=1;local on=has(selected,o)
-      local r=C(N("TextButton",{Text="",BackgroundColor3=on and Color3.fromRGB(56,25,32) or T.Surface3,BorderSizePixel=0,
-       AutoButtonColor=false,Size=UDim2.new(1,-4,0,28),LayoutOrder=n,ZIndex=802},scroll),4);rows[#rows+1]=r
-      label(r,on and "✓" or "",UDim2.new(0,6,0,0),UDim2.fromOffset(18,28),12,T.Success,T.Font,Enum.TextXAlignment.Center).ZIndex=803
-      label(r,o,UDim2.new(0,30,0,0),UDim2.new(1,-35,1,0),10,T.White,T.Body).ZIndex=803
-      own(r.Activated:Connect(function()
-       if multi then
-        if has(selected,o) then local z={} for _,v in ipairs(selected) do if v~=o then z[#z+1]=v end end selected=z else selected[#selected+1]=o end
-        upd();rebuild();fire()
-       else selected={o};upd();fire();pop.Visible=false;tw(ch,{Rotation=0},.14) end
-      end))
-     end end
+     clearRows()
+
+     local q=string.lower(sb.Text or "")
+     local n=0
+
+     for _,o in ipairs(options) do
+      if q=="" or string.find(string.lower(o),q,1,true) then
+       n+=1
+       local on=has(selected,o)
+
+       local r=C(N("TextButton",{
+        Text="",
+        BackgroundColor3=on and Color3.fromRGB(85,26,39) or Color3.fromRGB(58,20,29),
+        BackgroundTransparency=on and .06 or .22,
+        BorderSizePixel=0,
+        AutoButtonColor=false,
+        Size=UDim2.new(1,-2,0,32),
+        LayoutOrder=n,
+        ZIndex=822
+       },scroll),5)
+       rows[#rows+1]=r
+
+       local check=label(
+        r,
+        on and "✓" or "",
+        UDim2.new(0,7,0,0),
+        UDim2.fromOffset(18,32),
+        12,
+        T.Success,
+        T.Font,
+        Enum.TextXAlignment.Center
+       )
+       check.ZIndex=823
+
+       local optionLabel=label(
+        r,
+        o,
+        UDim2.new(0,29,0,0),
+        UDim2.new(1,-37,1,0),
+        10,
+        T.White,
+        T.Body
+       )
+       optionLabel.ZIndex=823
+
+       own(r.MouseEnter:Connect(function()
+        if not on then
+         tw(r,{BackgroundColor3=Color3.fromRGB(69,24,33),BackgroundTransparency=.12},.08)
+        end
+       end))
+
+       own(r.MouseLeave:Connect(function()
+        if not on then
+         tw(r,{BackgroundColor3=Color3.fromRGB(58,20,29),BackgroundTransparency=.22},.08)
+        end
+       end))
+
+       own(r.Activated:Connect(function()
+        if multi then
+         if has(selected,o) then
+          local z={}
+          for _,v in ipairs(selected) do
+           if v~=o then
+            z[#z+1]=v
+           end
+          end
+          selected=z
+         else
+          selected[#selected+1]=o
+         end
+
+         upd()
+         rebuild()
+         fire()
+        else
+         selected={o}
+         upd()
+         fire()
+         api:Close()
+        end
+       end))
+      end
+     end
+
      scroll.CanvasSize=UDim2.new(0,0,0,lay.AbsoluteContentSize.Y+4)
     end
+
     function api:Open()
-     local a=selector.AbsolutePosition;local p=P.AbsolutePosition
-     local w=math.max(180,selector.AbsoluteSize.X);local h=(multi and 81 or 50)+math.max(1,math.min(#options,6))*31
-     pop.Position=UDim2.fromOffset(a.X-p.X,a.Y-p.Y+selector.AbsoluteSize.Y+4);pop.Size=UDim2.fromOffset(w,math.min(h,260))
-     sb.Text="";rebuild();pop.Visible=true;tw(ch,{Rotation=180},.14)
+     local selectorPos=selector.AbsolutePosition
+     local selectorSize=selector.AbsoluteSize
+     local overlayPos=OverlayLayer.AbsolutePosition
+     local overlaySize=OverlayLayer.AbsoluteSize
+
+     local width=selectorSize.X
+     local resultCount=0
+     local filterText=string.lower(sb.Text or "")
+     for _,o in ipairs(options) do
+      if filterText=="" or string.find(string.lower(o),filterText,1,true) then
+       resultCount+=1
+      end
+     end
+
+     local listRows=math.max(1,math.min(resultCount,6))
+     local height=(multi and 80 or 49)+(listRows*35)
+
+     local relX=selectorPos.X-overlayPos.X
+     local relY=selectorPos.Y-overlayPos.Y+selectorSize.Y+4
+
+     if relX+width > overlaySize.X-8 then
+      relX=math.max(8,overlaySize.X-width-8)
+     end
+     if relX < 8 then
+      relX=8
+     end
+
+     if relY+height > overlaySize.Y-8 then
+      local above=(selectorPos.Y-overlayPos.Y)-height-4
+      if above >= 8 then
+       relY=above
+      else
+       relY=math.max(8,overlaySize.Y-height-8)
+      end
+     end
+
+     pop.Position=UDim2.fromOffset(relX,relY)
+     pop.Size=UDim2.fromOffset(width,math.min(height,270))
+
+     sb.Text=""
+     rebuild()
+     pop.Visible=true
+     popupOpen=true
+     tw(ch,{Rotation=180},.14)
     end
-    function api:Close()pop.Visible=false;tw(ch,{Rotation=0},.14)end
-    function api:Set(v,firecb)selected=norm(v);if not multi and #selected>1 then selected={selected[1]} end;upd();if pop.Visible then rebuild() end;if firecb==true then fire()end end
-    function api:Get()return multi and norm(selected) or selected[1]end
-    function api:SetOptions(v,preserve)options=norm(v);if preserve~=true then selected={} else local z={} for _,i in ipairs(selected)do if has(options,i)then z[#z+1]=i end end selected=z end;upd();if pop.Visible then rebuild()end end
-    function api:Refresh(v,s)if v~=nil then options=norm(v)end;if s~=nil then selected=norm(s)end;if not multi and #selected>1 then selected={selected[1]}end;upd();if pop.Visible then rebuild()end end
-    own(selector.Activated:Connect(function()if pop.Visible then api:Close()else api:Open()end end))
+
+    function api:Close()
+     pop.Visible=false
+     popupOpen=false
+     tw(ch,{Rotation=0},.14)
+    end
+
+    function api:Set(v,firecb)
+     selected=norm(v)
+     if not multi and #selected>1 then selected={selected[1]} end
+     upd()
+     if pop.Visible then rebuild() end
+     if firecb==true then fire() end
+    end
+
+    function api:Get()
+     return multi and norm(selected) or selected[1]
+    end
+
+    function api:SetOptions(v,preserve)
+     options=norm(v)
+     if preserve~=true then
+      selected={}
+     else
+      local z={}
+      for _,i in ipairs(selected) do
+       if has(options,i) then
+        z[#z+1]=i
+       end
+      end
+      selected=z
+     end
+     upd()
+     if pop.Visible then rebuild() end
+    end
+
+    function api:Refresh(v,s)
+     if v~=nil then options=norm(v) end
+     if s~=nil then selected=norm(s) end
+     if not multi and #selected>1 then selected={selected[1]} end
+     upd()
+     if pop.Visible then rebuild() end
+    end
+
+    own(selector.Activated:Connect(function()
+     if popupOpen then
+      api:Close()
+     else
+      api:Open()
+     end
+    end))
+
     own(sb:GetPropertyChangedSignal("Text"):Connect(rebuild))
-    own(all.Activated:Connect(function()if multi then selected=norm(options);upd();rebuild();fire()end end))
-    own(clear.Activated:Connect(function()selected={};upd();rebuild();fire()end))
-    self.Y=y+52;grow();search(title,selector);return api
+    own(all.Activated:Connect(function()
+     if multi then
+      selected=norm(options)
+      upd()
+      rebuild()
+      fire()
+     end
+    end))
+    own(clear.Activated:Connect(function()
+     selected={}
+     upd()
+     rebuild()
+     fire()
+    end))
+
+    own(UIS.InputBegan:Connect(function(input)
+     if not popupOpen then return end
+     local isMouse=input.UserInputType==Enum.UserInputType.MouseButton1
+     local isTouch=input.UserInputType==Enum.UserInputType.Touch
+     if not (isMouse or isTouch) then return end
+
+     local p=input.Position
+     local insideSelector=
+      p.X >= selector.AbsolutePosition.X and
+      p.X <= selector.AbsolutePosition.X + selector.AbsoluteSize.X and
+      p.Y >= selector.AbsolutePosition.Y and
+      p.Y <= selector.AbsolutePosition.Y + selector.AbsoluteSize.Y
+
+     local insidePopup=
+      p.X >= pop.AbsolutePosition.X and
+      p.X <= pop.AbsolutePosition.X + pop.AbsoluteSize.X and
+      p.Y >= pop.AbsolutePosition.Y and
+      p.Y <= pop.AbsolutePosition.Y + pop.AbsoluteSize.Y
+
+     if not insideSelector and not insidePopup then
+      api:Close()
+     end
+    end))
+
+    self.Y=y+52
+    grow()
+    search(title,selector)
+    return api
    end
 
    tab:_reflow();return sec
@@ -852,6 +1169,3 @@ function Library:SetNotification(info)
 end
 
 return Library
-
-
---dasdad
