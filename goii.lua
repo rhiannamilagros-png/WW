@@ -6,7 +6,7 @@ local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_PLANT_DROPDOWN"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_PLANT_DROPDOWN_SCROLL_CLOSE"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -353,6 +353,26 @@ function Library:CreateWindow(cfg)
     own(sb:GetPropertyChangedSignal("Text"):Connect(rebuild))
     own(all.Activated:Connect(function()if multi then selected=norm(options);upd();rebuild();fire()end end))
     own(clear.Activated:Connect(function()selected={};upd();rebuild();fire()end))
+
+    -- Match the original Plant Location picker:
+    -- a dropdown is anchored to the selector's current screen position.
+    -- As soon as the parent tab scrolls, close it instead of leaving a
+    -- floating popup behind at the old position.
+    if tab.Scroll then
+     own(tab.Scroll:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+      if pop.Visible then
+       api:Close()
+      end
+     end))
+    end
+
+    -- Also close it when switching away from this tab.
+    own(P:GetPropertyChangedSignal("Visible"):Connect(function()
+     if not P.Visible and pop.Visible then
+      api:Close()
+     end
+    end))
+
     self.Y=y+52;grow();search(title,selector);return api
    end
 
