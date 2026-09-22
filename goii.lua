@@ -3,9 +3,10 @@ local Players=game:GetService("Players")
 local UIS=game:GetService("UserInputService")
 local TS=game:GetService("TweenService")
 local TeleportService=game:GetService("TeleportService")
+local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_SOURCE_LIBRARY"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_EXACT_SEARCH_SERVERHOP"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -345,6 +346,13 @@ function Library:CreateWindow(cfg)
 
   function tab:AddUserDashboard(u)
    u=u or {};P.ClipsDescendants=false
+
+   local function registerUserSearch(title,target)
+    self.SearchItems[#self.SearchItems+1]={
+     Title=tostring(title or ""),
+     Target=target,
+    }
+   end
    if self.Built then
     if self.TitleLabel then self.TitleLabel:Destroy()end;if self.StatusLabel then self.StatusLabel:Destroy()end;if self.Scroll then self.Scroll:Destroy()end
     self.Built=false
@@ -383,6 +391,7 @@ function Library:CreateWindow(cfg)
    label(P,u.Description or "Manage your account, preferences and session.",UDim2.new(0,41,0,24),UDim2.new(1,-45,0,16),10,T.Muted,T.Body)
 
    local pc=card(UDim2.new(0,0,0,49),UDim2.new(.5,-5,0,159),"PLAYER INFO")
+   registerUserSearch("Player Info",pc)
    local av=C(N("Frame",{Position=UDim2.new(0,12,0,31),Size=UDim2.fromOffset(92,72),BackgroundColor3=Color3.fromRGB(26,25,28),BorderSizePixel=0,ClipsDescendants=true},pc),6);S(av,Color3.fromRGB(85,66,72),.62,1)
    N("ImageLabel",{Image="rbxthumb://type=AvatarBust&id="..tostring(LP.UserId).."&w=180&h=180",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),ScaleType=Enum.ScaleType.Fit},av)
    local function pv(t,v,y)label(pc,t,UDim2.new(0,114,0,y),UDim2.new(1,-124,0,13),9,T.Muted,T.Body);label(pc,tostring(v),UDim2.new(0,114,0,y+13),UDim2.new(1,-124,0,15),10,T.White,T.Font)end
@@ -393,19 +402,147 @@ function Library:CreateWindow(cfg)
    own(rejoin.Activated:Connect(function()if type(u.OnRejoin)=="function"then u.OnRejoin()return end;pcall(function()if game.JobId and game.JobId~=""then TeleportService:TeleportToPlaceInstance(game.PlaceId,game.JobId,LP)else TeleportService:Teleport(game.PlaceId,LP)end end)end))
 
    local sc=card(UDim2.new(.5,5,0,49),UDim2.new(.5,-5,0,159),"SESSION INFO")
+   registerUserSearch("Session Info",sc)
    local started=os.time()-math.floor(math.max(tonumber(time())or 0,tonumber(workspace.DistributedGameTime)or 0))
    local function dur(n)n=math.max(0,math.floor(n or 0));return string.format("%02d:%02d:%02d",math.floor(n/3600),math.floor((n%3600)/60),n%60)end
-   local play=row(sc,"Play Time",dur(time()),31);row(sc,"Join Time",os.date("%m/%d/%Y %I:%M:%S %p",started),55);row(sc,"Place ID",tostring(game.PlaceId),79);row(sc,"Job ID",tostring(game.JobId or "-"),103)
+   local play=row(sc,"Play Time",dur(time()),31)
+   row(sc,"Join Time",os.date("%m/%d/%Y %I:%M:%S %p",started),55)
+   row(sc,"Place ID",tostring(game.PlaceId),79)
+   row(sc,"Job ID",tostring(game.JobId or "-"),103)
+
+   local serverHopButton=C(N("TextButton",{
+    Text="SERVER HOP",
+    Position=UDim2.new(0,12,0,132),
+    Size=UDim2.new(1,-24,0,20),
+    BackgroundColor3=T.RedDark,
+    BorderSizePixel=0,
+    AutoButtonColor=false,
+    TextColor3=T.White,
+    Font=T.Font,
+    TextSize=9,
+   },sc),4)
+   S(serverHopButton,T.Red,.42,1)
+
+   local serverHopBusy=false
+
+   local function doServerHop()
+    if serverHopBusy then
+     return
+    end
+
+    serverHopBusy=true
+    serverHopButton.Text="SEARCHING..."
+
+    task.spawn(function()
+     local placeId=game.PlaceId
+     local currentJobId=tostring(game.JobId or "")
+     local cursor=nil
+     local found=false
+
+     for _=1,10 do
+      local url=
+       "https://games.roblox.com/v1/games/"
+       ..tostring(placeId)
+       .."/servers/Public?sortOrder=Asc&limit=100&excludeFullGames=true"
+
+      if cursor and cursor~="" then
+       url=url.."&cursor="..HttpService:UrlEncode(cursor)
+      end
+
+      local requestOk,response=pcall(function()
+       return game:HttpGet(url)
+      end)
+
+      if not requestOk then
+       break
+      end
+
+      local decodeOk,data=pcall(function()
+       return HttpService:JSONDecode(response)
+      end)
+
+      if not decodeOk or type(data)~="table" then
+       break
+      end
+
+      for _,server in ipairs(data.data or {}) do
+       local serverId=tostring(server.id or "")
+       local playing=tonumber(server.playing) or 0
+       local maxPlayers=tonumber(server.maxPlayers) or 0
+
+       if serverId~=""
+        and serverId~=currentJobId
+        and maxPlayers>0
+        and playing<maxPlayers
+       then
+        found=true
+        serverHopButton.Text="JOINING..."
+
+        pcall(function()
+         TeleportService:TeleportToPlaceInstance(
+          placeId,
+          serverId,
+          LP
+         )
+        end)
+
+        return
+       end
+      end
+
+      cursor=data.nextPageCursor
+
+      if not cursor or cursor=="" then
+       break
+      end
+     end
+
+     if not found and serverHopButton.Parent then
+      serverHopButton.Text="NO SERVER FOUND"
+
+      task.delay(1.4,function()
+       if serverHopButton.Parent then
+        serverHopButton.Text="SERVER HOP"
+       end
+      end)
+     end
+
+     serverHopBusy=false
+    end)
+   end
+
+   own(serverHopButton.MouseEnter:Connect(function()
+    tw(serverHopButton,{BackgroundColor3=T.Red},.1)
+   end))
+
+   own(serverHopButton.MouseLeave:Connect(function()
+    tw(serverHopButton,{BackgroundColor3=T.RedDark},.1)
+   end))
+
+   own(serverHopButton.Activated:Connect(doServerHop))
+   registerUserSearch("Server Hop",serverHopButton)
+   registerUserSearch("Job ID",sc)
+   registerUserSearch("Place ID",sc)
+   registerUserSearch("Play Time",sc)
+   registerUserSearch("Join Time",sc)
+
    task.spawn(function()while not window.Closed and play.Parent do if P.Visible then play.Text=dur(math.max(time(),workspace.DistributedGameTime,os.time()-started));task.wait(1)else task.wait(.5)end end end)
 
    local pref=card(UDim2.new(0,0,0,217),UDim2.new(.5,-5,1,-217),"PREFERENCES")
+   registerUserSearch("Preferences",pref)
    local a=tog(pref,"Auto Rejoin","Automatically rejoin after a disconnect.",31,prefs.AutoRejoin==true,function(v)prefs.AutoRejoin=v;if type(u.OnAutoRejoin)=="function"then u.OnAutoRejoin(v)end end)
    local l=tog(pref,"Low Graphics Mode","Reduce world effects and decorative UI for better FPS.",66,prefs.LowGraphics==true,function(v)prefs.LowGraphics=v;stars.Visible=not v;if type(u.OnLowGraphics)=="function"then u.OnLowGraphics(v)end end)
    local n=tog(pref,"UI Notifications","Keep ScoopHub notification preference enabled.",101,prefs.Notifications==true,function(v)prefs.Notifications=v;window.NotificationsEnabled=v end)
    local tt=tog(pref,"Show Tooltips","Show helper descriptions where supported.",136,prefs.Tooltips==true,function(v)prefs.Tooltips=v;window.TooltipsEnabled=v end)
    window.NotificationsEnabled=prefs.Notifications==true;window.TooltipsEnabled=prefs.Tooltips==true;stars.Visible=prefs.LowGraphics~=true
 
+   registerUserSearch("Auto Rejoin",pref)
+   registerUserSearch("Low Graphics Mode",pref)
+   registerUserSearch("UI Notifications",pref)
+   registerUserSearch("Show Tooltips",pref)
+
    local lc=card(UDim2.new(.5,5,0,217),UDim2.new(.5,-5,1,-217),"LOCALPLAYER")
+   registerUserSearch("LocalPlayer",lc)
    local q=u.LocalPlayer or {}
    label(lc,"WalkSpeed Value",UDim2.new(0,12,0,31),UDim2.new(1,-24,0,14),9,T.Muted,T.Font)
    local wi=C(N("TextBox",{Text=tostring(q.WalkSpeedValue or 16),PlaceholderText="16",ClearTextOnFocus=false,Font=T.Font,TextSize=10,TextColor3=T.White,
@@ -414,6 +551,12 @@ function Library:CreateWindow(cfg)
    own(wi.FocusLost:Connect(function(e)if type(q.OnWalkSpeedValue)=="function"then q.OnWalkSpeedValue(wi.Text,e)end end))
    local ws=tog(lc,"WalkSpeed","",87,q.WalkSpeed==true,q.OnWalkSpeed)
    local ij=tog(lc,"InfiniteJump","",122,q.InfiniteJump==true,q.OnInfiniteJump)
+
+   registerUserSearch("WalkSpeed Value",wi)
+   registerUserSearch("WalkSpeed",lc)
+   registerUserSearch("InfiniteJump",lc)
+   registerUserSearch("Copy User ID",copy)
+   registerUserSearch("Rejoin",rejoin)
    return{PlayerCard=pc,SessionCard=sc,PreferencesCard=pref,LocalPlayerCard=lc,AutoRejoin=a,LowGraphics=l,Notifications=n,Tooltips=tt,WalkSpeedInput=wi,WalkSpeed=ws,InfiniteJump=ij}
   end
 
@@ -421,15 +564,232 @@ function Library:CreateWindow(cfg)
   return tab
  end
 
- -- exact idle search field geometry
- local SearchBox=C(N("TextBox",{Name="ScoopHubGlobalSearch",Position=UDim2.fromOffset(6,7),Size=UDim2.new(1,-12,0,29),
-  BackgroundColor3=T.Surface3,BackgroundTransparency=.04,BorderSizePixel=0,Text="",PlaceholderText="Search...",
-  PlaceholderColor3=T.Muted,TextColor3=T.White,Font=T.Body,TextSize=10,TextXAlignment=Enum.TextXAlignment.Left,
-  ClearTextOnFocus=false,ZIndex=410},Side),5)
- S(SearchBox,T.Line,.55,1);N("UIPadding",{PaddingLeft=UDim.new(0,9),PaddingRight=UDim.new(0,7)},SearchBox)
- own(SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-  local q=string.lower(SearchBox.Text or "")
-  for _,name in ipairs(Order) do local d=NavData[name];d.b.Visible=q=="" or string.find(string.lower(name),q,1,true)~=nil end
+ -- exact sidebar search field geometry + feature search
+ local SearchBox=C(N("TextBox",{
+  Name="ScoopHubGlobalSearch",
+  Position=UDim2.fromOffset(6,7),
+  Size=UDim2.new(1,-12,0,29),
+  BackgroundColor3=T.Surface3,
+  BackgroundTransparency=.04,
+  BorderSizePixel=0,
+  Text="",
+  PlaceholderText="Search...",
+  PlaceholderColor3=T.Muted,
+  TextColor3=T.White,
+  Font=T.Body,
+  TextSize=10,
+  TextXAlignment=Enum.TextXAlignment.Left,
+  ClearTextOnFocus=false,
+  ZIndex=410,
+ },Side),5)
+
+ S(SearchBox,T.Line,.55,1)
+ N("UIPadding",{
+  PaddingLeft=UDim.new(0,9),
+  PaddingRight=UDim.new(0,7),
+ },SearchBox)
+
+ local SearchResults=C(N("Frame",{
+  Name="ScoopHubGlobalSearchResults",
+  Visible=false,
+  Position=UDim2.fromOffset(SIDE+6,7),
+  Size=UDim2.fromOffset(300,0),
+  BackgroundColor3=T.Panel,
+  BackgroundTransparency=.02,
+  BorderSizePixel=0,
+  ClipsDescendants=true,
+  ZIndex=1000,
+ },Body),6)
+
+ S(SearchResults,T.Line,.22,1.2)
+
+ local SearchScroll=N("ScrollingFrame",{
+  Position=UDim2.fromOffset(4,4),
+  Size=UDim2.new(1,-8,1,-8),
+  BackgroundTransparency=1,
+  BorderSizePixel=0,
+  CanvasSize=UDim2.new(),
+  ScrollBarThickness=3,
+  ScrollBarImageColor3=T.Red,
+  ZIndex=1001,
+ },SearchResults)
+
+ local SearchLayout=N("UIListLayout",{
+  Padding=UDim.new(0,2),
+  SortOrder=Enum.SortOrder.LayoutOrder,
+ },SearchScroll)
+
+ local searchRows={}
+
+ local function clearSearchRows()
+  for _,rowObject in ipairs(searchRows) do
+   if rowObject and rowObject.Parent then
+    rowObject:Destroy()
+   end
+  end
+  table.clear(searchRows)
+ end
+
+ local function scrollToTarget(tab,target)
+  if not tab or not target then
+   return
+  end
+
+  if tab.Scroll
+   and target:IsDescendantOf(tab.Scroll)
+  then
+   task.defer(function()
+    if not tab.Scroll or not tab.Scroll.Parent or not target.Parent then
+     return
+    end
+
+    local scaleValue=math.max(tonumber(Scale.Scale) or 1,.01)
+    local targetY=(target.AbsolutePosition.Y-tab.Scroll.AbsolutePosition.Y)/scaleValue
+    local current=tab.Scroll.CanvasPosition.Y
+    local wanted=math.max(0,current+targetY-18)
+
+    tab.Scroll.CanvasPosition=Vector2.new(
+     tab.Scroll.CanvasPosition.X,
+     wanted
+    )
+   end)
+  end
+ end
+
+ local function rebuildSearchResults()
+  clearSearchRows()
+
+  local query=string.lower(
+   tostring(SearchBox.Text or "")
+  )
+
+  if query=="" then
+   SearchResults.Visible=false
+   SearchResults.Size=UDim2.fromOffset(300,0)
+   return
+  end
+
+  local matches={}
+  local seen={}
+
+  -- Preserve tab order: USER -> AUTOMATION -> SHOP -> future tabs.
+  for _,tabName in ipairs(Order) do
+   local tab=Tabs[tabName]
+
+   if tab then
+    local tabTitle=string.upper(tabName)
+
+    for _,item in ipairs(tab.SearchItems or {}) do
+     local itemTitle=tostring(item.Title or "")
+     local haystack=string.lower(tabName.." "..itemTitle)
+
+     if itemTitle~=""
+      and string.find(haystack,query,1,true)
+     then
+      local key=string.lower(tabName.."\31"..itemTitle)
+
+      if not seen[key] then
+       seen[key]=true
+       matches[#matches+1]={
+        Tab=tabName,
+        TabLabel=tabTitle,
+        Title=itemTitle,
+        Target=item.Target,
+       }
+      end
+     end
+
+     if #matches>=8 then
+      break
+     end
+    end
+
+    if #matches>=8 then
+     break
+    end
+   end
+  end
+
+  if #matches==0 then
+   SearchResults.Visible=false
+   SearchResults.Size=UDim2.fromOffset(300,0)
+   return
+  end
+
+  for index,entry in ipairs(matches) do
+   local row=C(N("TextButton",{
+    Text="",
+    Size=UDim2.new(1,-3,0,34),
+    BackgroundColor3=T.Surface2,
+    BackgroundTransparency=.08,
+    BorderSizePixel=0,
+    AutoButtonColor=false,
+    LayoutOrder=index,
+    ZIndex=1002,
+   },SearchScroll),4)
+
+   searchRows[#searchRows+1]=row
+
+   local resultText=entry.TabLabel.." - "..entry.Title
+
+   local resultLabel=label(
+    row,
+    resultText,
+    UDim2.new(0,9,0,0),
+    UDim2.new(1,-18,1,0),
+    10,
+    T.White,
+    T.Font
+   )
+   resultLabel.ZIndex=1003
+
+   own(row.MouseEnter:Connect(function()
+    tw(row,{BackgroundColor3=Color3.fromRGB(54,24,31)},.1)
+   end))
+
+   own(row.MouseLeave:Connect(function()
+    tw(row,{BackgroundColor3=T.Surface2},.1)
+   end))
+
+   own(row.Activated:Connect(function()
+    local tab=Tabs[entry.Tab]
+
+    SearchBox.Text=""
+    SearchResults.Visible=false
+
+    open(entry.Tab)
+
+    if tab then
+     scrollToTarget(tab,entry.Target)
+    end
+   end))
+  end
+
+  local resultHeight=math.min(#matches,8)*36+8
+
+  SearchResults.Size=UDim2.fromOffset(
+   300,
+   math.min(resultHeight,296)
+  )
+
+  SearchScroll.CanvasSize=UDim2.new(
+   0,
+   0,
+   0,
+   SearchLayout.AbsoluteContentSize.Y+4
+  )
+
+  SearchResults.Visible=true
+ end
+
+ own(SearchBox:GetPropertyChangedSignal("Text"):Connect(
+  rebuildSearchResults
+ ))
+
+ own(SearchBox.FocusLost:Connect(function()
+  if SearchBox.Text=="" then
+   SearchResults.Visible=false
+  end
  end))
 
  function window:Notify(info,force)
