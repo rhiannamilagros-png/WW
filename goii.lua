@@ -6,7 +6,7 @@ local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_ANCHORED_DROPDOWN_HOVER_FIX"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_TAB_ORDER_FIX"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -146,7 +146,7 @@ function Library:CreateWindow(cfg)
  local Body=N("Frame",{Position=UDim2.new(0,GAP,0,HEADER+GAP),Size=UDim2.new(1,-GAP*2,1,-HEADER-GAP*2),BackgroundTransparency=1},Main)
  local Side=panel(Body,UDim2.new(0,0,0,0),UDim2.new(0,SIDE,1,0))
  local Nav=N("Frame",{Position=UDim2.fromOffset(6,42),Size=UDim2.new(1,-12,1,-49),BackgroundTransparency=1},Side)
- N("UIListLayout",{Padding=UDim.new(0,2)},Nav)
+ N("UIListLayout",{Padding=UDim.new(0,2),SortOrder=Enum.SortOrder.LayoutOrder},Nav)
 
  local Pages,NavData,Tabs,Order={},{},{},{}
  local active=nil
@@ -171,9 +171,36 @@ function Library:CreateWindow(cfg)
  end
  function window:SelectTab(name) open(name) end
 
- local function nav(name,iconImage)
-  local b=C(N("TextButton",{Size=UDim2.new(1,0,0,35),BackgroundColor3=T.Surface2,BackgroundTransparency=1,
-   BorderSizePixel=0,Text="",AutoButtonColor=false,LayoutOrder=#Order+1},Nav),5)
+ local ReferenceNavOrder={
+  User=10,
+  Automation=20,
+  Garden=30,
+  Shop=40,
+  Mail=50,
+  ["Auto Buy Pet"]=60,
+  Inventory=70,
+  Config=80,
+  Misc=90,
+ }
+
+ local function nav(name,iconImage,requestedOrder)
+  local stableOrder=
+   tonumber(requestedOrder)
+   or ReferenceNavOrder[name]
+   or ((#Order+1)*10)
+
+  local safeName=tostring(name):gsub("[^%w_]","_")
+
+  local b=C(N("TextButton",{
+   Name="Nav_"..safeName,
+   Size=UDim2.new(1,0,0,35),
+   BackgroundColor3=T.Surface2,
+   BackgroundTransparency=1,
+   BorderSizePixel=0,
+   Text="",
+   AutoButtonColor=false,
+   LayoutOrder=stableOrder
+  },Nav),5)
   local bar=C(N("Frame",{Position=UDim2.new(0,0,.5,-12),Size=UDim2.fromOffset(3,24),BackgroundColor3=T.Red,BorderSizePixel=0,Visible=false},b),2)
   local ib=C(N("Frame",{Position=UDim2.new(0,6,.5,-13),Size=UDim2.fromOffset(27,27),BackgroundColor3=T.Surface2,BorderSizePixel=0},b),5)
   S(ib,T.Stroke,.75)
@@ -188,7 +215,23 @@ function Library:CreateWindow(cfg)
   if type(c)=="string" then c={Name=c} else c=c or {} end
   local name=tostring(c.Name or ("Tab "..tostring(#Order+1)))
   if Tabs[name] then return Tabs[name] end
-  local P=page(name);nav(name,c.Icon);Order[#Order+1]=name
+  local P=page(name)
+  nav(name,c.Icon,c.Order)
+
+  Order[#Order+1]=name
+  table.sort(Order,function(a,b)
+   local da=NavData[a]
+   local db=NavData[b]
+   local ao=da and da.b and da.b.LayoutOrder or math.huge
+   local bo=db and db.b and db.b.LayoutOrder or math.huge
+
+   if ao==bo then
+    return tostring(a)<tostring(b)
+   end
+
+   return ao<bo
+  end)
+
   local tab={Name=name,Page=P,Title=c.Title or string.upper(name),Status=c.Status or "",Built=false,Sections={},Y={Left=0,Right=0},SearchItems={}}
   Tabs[name]=tab
 
