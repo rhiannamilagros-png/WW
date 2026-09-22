@@ -6,7 +6,7 @@ local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_ANCHORED_DROPDOWN"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_ANCHORED_DROPDOWN_HOVER_FIX"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -752,6 +752,20 @@ function Library:CreateWindow(cfg)
      table.clear(rows)
     end
 
+    local function resetRowColors()
+     for _,r in ipairs(rows) do
+      if r and r.Parent then
+       local optionName=r:GetAttribute("ScoopHubOptionName")
+
+       r.BackgroundColor3=
+        optionName
+        and has(selected,optionName)
+        and Color3.fromRGB(55,22,30)
+        or T.Surface2
+      end
+     end
+    end
+
     local function rebuild()
      clearRows()
 
@@ -789,6 +803,7 @@ function Library:CreateWindow(cfg)
        },scroll),4)
 
        rows[#rows+1]=r
+       r:SetAttribute("ScoopHubOptionName",o)
 
        label(
         r,
@@ -813,11 +828,7 @@ function Library:CreateWindow(cfg)
 
        own(r.MouseEnter:Connect(function()
         if not has(selected,o) then
-         tw(
-          r,
-          {BackgroundColor3=T.RedDark},
-          .08
-         )
+         r.BackgroundColor3=T.RedDark
         end
        end))
 
@@ -888,6 +899,7 @@ function Library:CreateWindow(cfg)
 
      sb.Text=""
      rebuild()
+     resetRowColors()
 
      pop.Visible=true
      openState=true
@@ -1010,7 +1022,14 @@ function Library:CreateWindow(cfg)
        ):
        Connect(function()
         if pop.Visible then
+         resetRowColors()
          updatePosition()
+
+         task.defer(function()
+          if pop.Visible then
+           resetRowColors()
+          end
+         end)
         end
        end)
      )
@@ -1024,7 +1043,14 @@ function Library:CreateWindow(cfg)
       ):
       Connect(function()
        if pop.Visible then
+        resetRowColors()
         updatePosition()
+
+        task.defer(function()
+         if pop.Visible then
+          resetRowColors()
+         end
+        end)
        end
       end)
     )
