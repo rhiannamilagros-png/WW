@@ -17,7 +17,7 @@ end
 
 EnabledAFK()
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_TIGHT_BRAND_SPACING_ANTI_AFK"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_VERSION_PILL_ANTI_AFK"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -168,30 +168,65 @@ function Library:CreateWindow(cfg)
  BrandPremium.Name="ScoopHubBrandAccent"
  BrandPremium.ZIndex=51
 
+ local BrandVersionPill=N("Frame",{
+  Name="ScoopHubBrandVersionPill",
+  BackgroundColor3=Color3.fromRGB(18,10,14),
+  BackgroundTransparency=.12,
+  BorderSizePixel=0,
+  Position=UDim2.new(0,0,0,3),
+  Size=UDim2.fromOffset(42,18),
+  ZIndex=51
+ },Header)
+ N("UICorner",{CornerRadius=UDim.new(1,0)},BrandVersionPill)
+ N("UIStroke",{
+  Color=T.Red,
+  Thickness=1,
+  Transparency=.18
+ },BrandVersionPill)
+
  local BrandVersion=label(
-  Header,
+  BrandVersionPill,
   tostring(cfg.Version or "V1.1"),
-  UDim2.new(0,0,0,4),
-  UDim2.fromOffset(36,15),
+  UDim2.new(.5,0,.5,0),
+  UDim2.fromOffset(30,12),
   10,
-  T.Muted,
-  T.Body
+  Color3.fromRGB(235,238,244),
+  T.Font
  )
  BrandVersion.Name="ScoopHubBrandVersion"
- BrandVersion.ZIndex=51
+ BrandVersion.AnchorPoint=Vector2.new(.5,.5)
+ BrandVersion.Position=UDim2.new(.5,0,.5,0)
+ BrandVersion.BackgroundTransparency=1
+ BrandVersion.ZIndex=52
 
  local function alignBrandVersion()
   local premiumWidth=BrandPremium.TextBounds.X
+  local versionWidth=math.max(
+   24,
+   BrandVersion.TextBounds.X
+  )
+  local pillWidth=versionWidth+18
 
-  BrandVersion.Position=UDim2.new(
+  BrandVersionPill.Position=UDim2.new(
    0,
-   BrandPremium.Position.X.Offset+premiumWidth+4,
+   BrandPremium.Position.X.Offset+premiumWidth+8,
    0,
-   4
+   3
+  )
+  BrandVersionPill.Size=UDim2.fromOffset(
+   pillWidth,
+   18
+  )
+  BrandVersion.Size=UDim2.fromOffset(
+   versionWidth,
+   12
   )
  end
 
  BrandPremium:GetPropertyChangedSignal("TextBounds"):Connect(
+  alignBrandVersion
+ )
+ BrandVersion:GetPropertyChangedSignal("TextBounds"):Connect(
   alignBrandVersion
  )
 
