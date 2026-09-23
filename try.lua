@@ -17,7 +17,7 @@ end
 
 EnabledAFK()
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_DYNAMIC_VERSION_SPACING_ANTI_AFK"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_TRANSPARENT_LOGO_DYNAMIC_VERSION_ANTI_AFK"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -135,7 +135,7 @@ function Library:CreateWindow(cfg)
 
  local HeaderLogo=N("ImageLabel",{
   Name="ScoopHubHeaderLogo",
-  Image=cfg.Logo or "rbxassetid://79102423840375",
+  Image=cfg.Logo or "rbxassetid://103193552186220",
   ImageColor3=cfg.LogoColor or T.Red,
   BackgroundTransparency=1,
   ScaleType=Enum.ScaleType.Fit,
@@ -1749,3 +1749,6 @@ function Library:SetNotification(info)
 end
 
 return Library
+
+
+-- fasiyudgfaiyeu
