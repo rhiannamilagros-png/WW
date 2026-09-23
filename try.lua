@@ -17,7 +17,7 @@ end
 
 EnabledAFK()
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_BRANDED_HEADER_COMPACT_VERSION_ANTI_AFK"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_DYNAMIC_VERSION_SPACING_ANTI_AFK"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -171,7 +171,7 @@ function Library:CreateWindow(cfg)
  local BrandVersion=label(
   Header,
   tostring(cfg.Version or "V1.1"),
-  UDim2.new(0,193,0,4),
+  UDim2.new(0,0,0,4),
   UDim2.fromOffset(36,15),
   10,
   T.Muted,
@@ -179,6 +179,23 @@ function Library:CreateWindow(cfg)
  )
  BrandVersion.Name="ScoopHubBrandVersion"
  BrandVersion.ZIndex=51
+
+ local function alignBrandVersion()
+  local premiumWidth=BrandPremium.TextBounds.X
+
+  BrandVersion.Position=UDim2.new(
+   0,
+   BrandPremium.Position.X.Offset+premiumWidth+4,
+   0,
+   4
+  )
+ end
+
+ BrandPremium:GetPropertyChangedSignal("TextBounds"):Connect(
+  alignBrandVersion
+ )
+
+ task.defer(alignBrandVersion)
 
  local BrandByline=label(
   Header,
@@ -1732,6 +1749,3 @@ function Library:SetNotification(info)
 end
 
 return Library
-
-
--- hsaigfiyasfa
