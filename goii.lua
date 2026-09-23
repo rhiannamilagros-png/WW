@@ -4,9 +4,20 @@ local UIS=game:GetService("UserInputService")
 local TS=game:GetService("TweenService")
 local TeleportService=game:GetService("TeleportService")
 local HttpService=game:GetService("HttpService")
+local VirtualUser=game:GetService("VirtualUser")
 local LP=Players.LocalPlayer
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_SECRET_INPUT_FIX"}
+local function EnabledAFK()
+ LP.Idled:Connect(function()
+  VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+  task.wait(1)
+  VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+ end)
+end
+
+EnabledAFK()
+
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_STABLE_SECRET_INPUT_FIX_ANTI_AFK"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
