@@ -17,7 +17,7 @@ end
 
 EnabledAFK()
 
-local Library={Unloaded=false,Build="SCOOPHUB_V2_2_BRANDED_HEADER_ANTI_AFK"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_BRANDED_HEADER_COMPACT_VERSION_ANTI_AFK"}
 
 local T={
  Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
@@ -135,7 +135,7 @@ function Library:CreateWindow(cfg)
 
  local HeaderLogo=N("ImageLabel",{
   Name="ScoopHubHeaderLogo",
-  Image=cfg.Logo or "rbxassetid://90541504618217",
+  Image=cfg.Logo or "rbxassetid://79102423840375",
   ImageColor3=cfg.LogoColor or T.Red,
   BackgroundTransparency=1,
   ScaleType=Enum.ScaleType.Fit,
@@ -171,8 +171,8 @@ function Library:CreateWindow(cfg)
  local BrandVersion=label(
   Header,
   tostring(cfg.Version or "V1.1"),
-  UDim2.new(0,207,0,4),
-  UDim2.fromOffset(42,15),
+  UDim2.new(0,193,0,4),
+  UDim2.fromOffset(36,15),
   10,
   T.Muted,
   T.Body
@@ -1732,3 +1732,6 @@ function Library:SetNotification(info)
 end
 
 return Library
+
+
+-- hsaigfiyasfa
