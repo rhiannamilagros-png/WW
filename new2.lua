@@ -17,7 +17,7 @@ end
 
 EnabledAFK()
 
-local Library={Unloaded=false,Build="SCOOPHUB_PREMIUM_OPTION2_BRANDED_HEADER"}
+local Library={Unloaded=false,Build="SCOOPHUB_PREMIUM_OPTION2_BRANDED_HEADER_FIXED_BORDER"}
 
 local T={
  Bg=Color3.fromRGB(7,7,9),Panel=Color3.fromRGB(15,12,14),
@@ -109,7 +109,7 @@ function Library:CreateWindow(cfg)
   SliceCenter=Rect.new(49,49,450,450)},Holder)
  local Main=C(N("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=T.Bg,BackgroundTransparency=.04,
   BorderSizePixel=0,ClipsDescendants=true},Shadow),8)
- S(Main,T.Stroke,.86)
+ S(Main,T.Stroke,.96)
  N("UIGradient",{Color=ColorSequence.new({
   ColorSequenceKeypoint.new(0,T.Top),ColorSequenceKeypoint.new(.52,T.Mid),ColorSequenceKeypoint.new(1,T.Low)
  }),Rotation=16},Main)
@@ -328,6 +328,25 @@ function Library:CreateWindow(cfg)
   BorderSizePixel=0,
   ZIndex=52
  },Header)
+
+ -- Dedicated outer border overlay.
+ -- This sits above the opaque header so the rounded border stays visible
+ -- on the top edge, side edges, and corners.
+ local OuterBorder=C(N("Frame",{
+  Name="ScoopHubOuterBorder",
+  Size=UDim2.fromScale(1,1),
+  BackgroundTransparency=1,
+  BorderSizePixel=0,
+  Active=false,
+  ZIndex=100
+ },Main),8)
+
+ local OuterStroke=N("UIStroke",{
+  Color=T.Red,
+  Transparency=.34,
+  Thickness=1.15,
+  ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+ },OuterBorder)
 
  local Body=N("Frame",{Position=UDim2.new(0,GAP,0,HEADER+GAP),Size=UDim2.new(1,-GAP*2,1,-HEADER-GAP*2),BackgroundTransparency=1},Main)
  local Side=panel(Body,UDim2.new(0,0,0,0),UDim2.new(0,SIDE,1,0))
