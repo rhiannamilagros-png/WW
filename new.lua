@@ -17,29 +17,24 @@ end
 
 EnabledAFK()
 
-local Library={Unloaded=false,Build="SCOOPHUB_PREMIUM_OPTION2_BRANDED_HEADER"}
+local Library={Unloaded=false,Build="SCOOPHUB_V2_2_SEPARATE_LOGO_BOX_ANTI_AFK"}
 
 local T={
- Bg=Color3.fromRGB(7,7,9),Panel=Color3.fromRGB(15,12,14),
- Line=Color3.fromRGB(105,27,36),Red=Color3.fromRGB(225,38,55),
- RedDark=Color3.fromRGB(125,22,32),Text=Color3.fromRGB(239,49,66),
- Dim=Color3.fromRGB(151,65,74),White=Color3.fromRGB(247,247,249),
- Muted=Color3.fromRGB(157,157,166),Success=Color3.fromRGB(91,205,151),
- Input=Color3.fromRGB(43,36,42),Surface2=Color3.fromRGB(29,21,25),
- Surface3=Color3.fromRGB(38,27,32),Stroke=Color3.fromRGB(126,31,42),
- Top=Color3.fromRGB(17,10,13),Mid=Color3.fromRGB(7,7,9),
- Low=Color3.fromRGB(12,8,10),Tab=Color3.fromRGB(25,18,21),
+ Bg=Color3.fromRGB(9,5,8),Panel=Color3.fromRGB(22,10,14),
+ Line=Color3.fromRGB(154,44,53),Red=Color3.fromRGB(231,47,59),
+ RedDark=Color3.fromRGB(145,28,39),Text=Color3.fromRGB(255,111,120),
+ Dim=Color3.fromRGB(190,73,84),White=Color3.fromRGB(246,244,252),
+ Muted=Color3.fromRGB(199,170,176),Success=Color3.fromRGB(99,215,163),
+ Input=Color3.fromRGB(49,41,49),Surface2=Color3.fromRGB(37,17,23),
+ Surface3=Color3.fromRGB(52,31,37),Stroke=Color3.fromRGB(179,52,63),
+ Top=Color3.fromRGB(39,11,17),Mid=Color3.fromRGB(8,5,8),
+ Low=Color3.fromRGB(34,8,11),Tab=Color3.fromRGB(35,16,22),
  Font=Enum.Font.GothamBold,Body=Enum.Font.Gotham
 }
 Library.Theme=T
 
 local W,H=690,445
-local HEADER,SIDE,GAP=50,132,8
-
--- Built-in ScoopHub branding.
-local SCOOPHUB_LOGO="rbxassetid://97406911955707"
-local SCOOPHUB_BRAND="SCOOPHUB"
-local SCOOPHUB_TIER="PREMIUM"
+local HEADER,SIDE,GAP=38,132,8
 local USER_SOFT=Color3.fromRGB(92,67,72)
 local USER_BUTTON=Color3.fromRGB(50,14,18)
 local USER_BUTTON_HOVER=Color3.fromRGB(74,18,24)
@@ -127,173 +122,179 @@ function Library:CreateWindow(cfg)
  -- exact 80-star background from V2.2
  local stars=N("Frame",{Name="ScoopHubDecorativeStars",Size=UDim2.fromScale(1,1),BackgroundTransparency=1},Main)
  local rnd=Random.new(LP.UserId)
- local sc={Color3.fromRGB(225,38,55),Color3.fromRGB(176,50,62),Color3.fromRGB(235,235,238)}
- for i=1,28 do
-  local d=rnd:NextNumber()>.88 and 2 or 1
+ local sc={Color3.fromRGB(255,218,218),Color3.fromRGB(246,141,151),Color3.fromRGB(255,205,156)}
+ for i=1,80 do
+  local d=rnd:NextNumber()>.8 and 2 or 1
   C(N("Frame",{Name="MainStar",Position=UDim2.fromScale(rnd:NextNumber(.01,.99),rnd:NextNumber(.02,.98)),
    Size=UDim2.fromOffset(d,d),BackgroundColor3=sc[rnd:NextInteger(1,#sc)],
-   BackgroundTransparency=rnd:NextNumber(.72,.90),BorderSizePixel=0},stars),20)
+   BackgroundTransparency=rnd:NextNumber(.45,.78),BorderSizePixel=0},stars),20)
  end
 
- -- ScoopHub Premium / Option 2 branded header
- local Header=C(N("Frame",{
-  Size=UDim2.new(1,0,0,HEADER),
-  BackgroundColor3=Color3.fromRGB(8,8,10),
-  BackgroundTransparency=.03,
-  BorderSizePixel=0,
-  Active=true,
-  ZIndex=50
- },Main),8)
+ -- branded header geometry
+ local Header=N("Frame",{Size=UDim2.new(1,0,0,HEADER),BackgroundTransparency=1,Active=true,ZIndex=50},Main)
 
- -- Built into the library: scripts no longer provide Logo.
+ local HeaderLogoBox=C(N("Frame",{
+  Name="ScoopHubHeaderLogoBox",
+  BackgroundColor3=Color3.fromRGB(7,7,9),
+  BackgroundTransparency=.02,
+  BorderSizePixel=0,
+  Position=UDim2.new(0,8,.5,-18),
+  Size=UDim2.fromOffset(36,36),
+  ZIndex=51
+ },Header),8)
+
+ S(
+  HeaderLogoBox,
+  Color3.fromRGB(55,22,28),
+  .72,
+  1
+ )
+
+ local LogoInnerSize=math.clamp(
+  tonumber(cfg.LogoInnerSize) or 32,
+  16,
+  34
+ )
+
  local HeaderLogo=N("ImageLabel",{
   Name="ScoopHubHeaderLogo",
-  Image=SCOOPHUB_LOGO,
-  ImageColor3=Color3.fromRGB(255,255,255),
+  Image=cfg.Logo or "rbxassetid://103193552186220",
+  ImageColor3=cfg.LogoColor or Color3.fromRGB(255,255,255),
   BackgroundTransparency=1,
   ScaleType=Enum.ScaleType.Fit,
-  Position=UDim2.new(0,12,.5,-16),
-  Size=UDim2.fromOffset(32,32),
-  ZIndex=52
- },Header)
-
- -- One rich-text brand label keeps SCOOPHUB / PREMIUM aligned as one unit.
- local BrandText=N("TextLabel",{
-  Name="ScoopHubBrandText",
-  BackgroundTransparency=1,
-  RichText=true,
-  Text='<font color="#F7F7F9">SCOOPHUB</font> <font color="#E12637">PREMIUM</font>',
-  Position=UDim2.new(0,52,0,7),
-  Size=UDim2.fromOffset(180,18),
-  TextColor3=T.White,
-  Font=T.Font,
-  TextSize=13,
-  TextXAlignment=Enum.TextXAlignment.Left,
-  ZIndex=52
- },Header)
-
- local BrandByline=label(
-  Header,
-  tostring(cfg.Byline or cfg.Subtitle or "By Scoop"),
-  UDim2.new(0,52,0,28),
-  UDim2.fromOffset(120,13),
-  9,
-  Color3.fromRGB(151,151,160),
-  T.Body
- )
- BrandByline.Name="ScoopHubBrandByline"
- BrandByline.ZIndex=52
-
- -- Small understated version badge.
- local VersionPill=C(N("Frame",{
-  Name="ScoopHubVersionPill",
-  Position=UDim2.new(0,226,0,8),
-  Size=UDim2.fromOffset(42,17),
-  BackgroundColor3=Color3.fromRGB(25,19,22),
-  BackgroundTransparency=.06,
-  BorderSizePixel=0,
-  ZIndex=52
- },Header),9)
- S(VersionPill,T.Red,.45,1)
-
- local BrandVersion=label(
-  VersionPill,
-  tostring(cfg.Version or "V1.1"),
-  UDim2.new(),
-  UDim2.fromScale(1,1),
-  9,
-  Color3.fromRGB(220,213,218),
-  T.Font,
-  Enum.TextXAlignment.Center
- )
- BrandVersion.ZIndex=53
-
- local invite=tostring(cfg.Discord or "discord.gg/WxgqUa9Qz")
-
- -- Centered Discord pill, visually separated from the brand group.
- local DiscordPill=C(N("Frame",{
-  Name="DiscordPill",
   AnchorPoint=Vector2.new(.5,.5),
-  Position=UDim2.new(.60,0,.5,0),
-  Size=UDim2.fromOffset(176,25),
-  BackgroundColor3=Color3.fromRGB(32,23,28),
-  BackgroundTransparency=.04,
-  BorderSizePixel=0,
-  ClipsDescendants=true,
+  Position=UDim2.fromScale(.5,.5),
+  Size=UDim2.fromOffset(LogoInnerSize,LogoInnerSize),
   ZIndex=52
- },Header),13)
- S(DiscordPill,T.Red,.58,1)
+ },HeaderLogoBox)
 
- N("ImageLabel",{
-  Name="DiscordIcon",
-  Image=cfg.DiscordIcon or "rbxassetid://94434236999817",
-  ImageColor3=Color3.fromRGB(205,199,255),
-  ScaleType=Enum.ScaleType.Fit,
-  BackgroundTransparency=1,
-  BorderSizePixel=0,
-  AnchorPoint=Vector2.new(0,.5),
-  Position=UDim2.new(0,10,.5,0),
-  Size=UDim2.fromOffset(14,14),
-  ZIndex=53
- },DiscordPill)
-
- local DiscordText=label(
-  DiscordPill,
-  invite,
-  UDim2.new(0,31,0,0),
-  UDim2.new(1,-38,1,0),
-  10,
+ local BrandPrimary=label(
+  Header,
+  tostring(cfg.BrandPrimary or "SCOOPHUB"),
+  UDim2.new(0,47,0,2),
+  UDim2.fromOffset(84,18),
+  15,
   T.White,
   T.Font
  )
- DiscordText.ZIndex=53
+ BrandPrimary.Name="ScoopHubBrandPrimary"
+ BrandPrimary.ZIndex=51
 
- local Discord=N("TextButton",{
-  Text="",
-  BackgroundTransparency=1,
-  BorderSizePixel=0,
-  Size=UDim2.fromScale(1,1),
-  AutoButtonColor=false,
-  ZIndex=54
- },DiscordPill)
+ local BrandPremium=label(
+  Header,
+  tostring(cfg.BrandAccent or "PREMIUM"),
+  UDim2.new(0,0,0,2),
+  UDim2.fromOffset(77,18),
+  15,
+  T.Red,
+  T.Font
+ )
+ BrandPremium.Name="ScoopHubBrandAccent"
+ BrandPremium.ZIndex=51
 
- local Min=C(N("TextButton",{
-  Text="-",
-  Position=UDim2.new(1,-70,.5,-14),
-  Size=UDim2.fromOffset(28,28),
-  BackgroundColor3=Color3.fromRGB(29,20,24),
-  BackgroundTransparency=.04,
-  TextColor3=T.White,
-  Font=T.Font,
-  TextSize=16,
+ local BrandVersionPill=N("Frame",{
+  Name="ScoopHubBrandVersionPill",
+  BackgroundColor3=Color3.fromRGB(18,10,14),
+  BackgroundTransparency=.12,
   BorderSizePixel=0,
-  ZIndex=53
- },Header),7)
- S(Min,T.Red,.62,1)
-
- local Close=C(N("TextButton",{
-  Text="X",
-  Position=UDim2.new(1,-36,.5,-14),
-  Size=UDim2.fromOffset(28,28),
-  BackgroundColor3=Color3.fromRGB(29,20,24),
-  BackgroundTransparency=.04,
-  TextColor3=T.White,
-  Font=T.Font,
-  TextSize=13,
-  BorderSizePixel=0,
-  ZIndex=53
- },Header),7)
- S(Close,T.Red,.62,1)
-
- -- Clean single accent line under the header.
- N("Frame",{
-  Position=UDim2.new(0,10,1,-1),
-  Size=UDim2.new(1,-20,0,1),
-  BackgroundColor3=T.Red,
-  BackgroundTransparency=.24,
-  BorderSizePixel=0,
-  ZIndex=52
+  Position=UDim2.new(0,0,0,5),
+  Size=UDim2.fromOffset(38,16),
+  ZIndex=51
  },Header)
+ N("UICorner",{CornerRadius=UDim.new(1,0)},BrandVersionPill)
+ N("UIStroke",{
+  Color=T.Red,
+  Thickness=.8,
+  Transparency=.32
+ },BrandVersionPill)
+
+ local BrandVersion=label(
+  BrandVersionPill,
+  tostring(cfg.Version or "V1.1"),
+  UDim2.new(.5,0,.5,0),
+  UDim2.fromOffset(26,10),
+  9,
+  Color3.fromRGB(235,238,244),
+  T.Font
+ )
+ BrandVersion.Name="ScoopHubBrandVersion"
+ BrandVersion.AnchorPoint=Vector2.new(.5,.5)
+ BrandVersion.Position=UDim2.new(.5,0,.5,0)
+ BrandVersion.BackgroundTransparency=1
+ BrandVersion.ZIndex=52
+
+ local function alignBrandVersion()
+  local primaryWidth=BrandPrimary.TextBounds.X
+  local premiumWidth=BrandPremium.TextBounds.X
+  local versionWidth=math.max(
+   24,
+   BrandVersion.TextBounds.X
+  )
+  local premiumX=BrandPrimary.Position.X.Offset+primaryWidth+3
+  local pillWidth=versionWidth+14
+
+  BrandPremium.Position=UDim2.new(
+   0,
+   premiumX,
+   0,
+   2
+  )
+
+  BrandVersionPill.Position=UDim2.new(
+   0,
+   premiumX+premiumWidth+3,
+   0,
+   5
+  )
+  BrandVersionPill.Size=UDim2.fromOffset(
+   pillWidth,
+   16
+  )
+  BrandVersion.Size=UDim2.fromOffset(
+   versionWidth,
+   10
+  )
+ end
+
+ BrandPrimary:GetPropertyChangedSignal("TextBounds"):Connect(
+  alignBrandVersion
+ )
+ BrandPremium:GetPropertyChangedSignal("TextBounds"):Connect(
+  alignBrandVersion
+ )
+ BrandVersion:GetPropertyChangedSignal("TextBounds"):Connect(
+  alignBrandVersion
+ )
+
+ task.defer(alignBrandVersion)
+
+ local BrandByline=label(
+  Header,
+  tostring(cfg.Byline or "By Scoop"),
+  UDim2.new(0,47,0,20),
+  UDim2.fromOffset(120,13),
+  10,
+  Color3.fromRGB(166,174,187),
+  T.Body
+ )
+ BrandByline.Name="ScoopHubBrandByline"
+ BrandByline.ZIndex=51
+
+ local invite=tostring(cfg.Discord or "discord.gg/WxgqUa9Qz")
+ local DiscordPill=C(N("Frame",{Name="DiscordPill",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.new(.55,0,.5,0),
+  Size=UDim2.fromOffset(174,22),BackgroundColor3=T.Surface3,BackgroundTransparency=.08,
+  BorderSizePixel=0,ClipsDescendants=true},Header),11)
+ S(DiscordPill,T.Line,.62)
+ N("ImageLabel",{Name="DiscordIcon",Image=cfg.DiscordIcon or "rbxassetid://94434236999817",
+  ImageColor3=Color3.fromRGB(255,255,255),ScaleType=Enum.ScaleType.Fit,BackgroundTransparency=1,
+  BorderSizePixel=0,AnchorPoint=Vector2.new(0,.5),Position=UDim2.new(0,8,.5,0),Size=UDim2.fromOffset(14,14)},DiscordPill)
+ label(DiscordPill,invite,UDim2.new(0,27,0,0),UDim2.new(1,-32,1,0),11,T.White,T.Font)
+ local Discord=N("TextButton",{Text="",BackgroundTransparency=1,BorderSizePixel=0,Size=UDim2.fromScale(1,1),AutoButtonColor=false},DiscordPill)
+ local Min=C(N("TextButton",{Text="-",Position=UDim2.new(1,-62,.5,-12),Size=UDim2.fromOffset(25,25),
+  BackgroundColor3=T.Surface2,BackgroundTransparency=.22,TextColor3=T.White,Font=T.Font,TextSize=16,BorderSizePixel=0,ZIndex=52},Header),5)
+ local Close=C(N("TextButton",{Text="X",Position=UDim2.new(1,-31,.5,-12),Size=UDim2.fromOffset(25,25),
+  BackgroundColor3=T.Surface2,BackgroundTransparency=.22,TextColor3=T.White,Font=T.Font,TextSize=14,BorderSizePixel=0,ZIndex=52},Header),5)
+ N("Frame",{Position=UDim2.new(0,8,0,HEADER),Size=UDim2.new(1,-16,0,1),BackgroundColor3=T.Red,BackgroundTransparency=.42,BorderSizePixel=0},Main)
 
  local Body=N("Frame",{Position=UDim2.new(0,GAP,0,HEADER+GAP),Size=UDim2.new(1,-GAP*2,1,-HEADER-GAP*2),BackgroundTransparency=1},Main)
  local Side=panel(Body,UDim2.new(0,0,0,0),UDim2.new(0,SIDE,1,0))
@@ -1788,7 +1789,7 @@ function Library:CreateWindow(cfg)
 
  local minimized=false;local expanded=Holder.Position;local miniPos=nil
  local Mini=C(N("TextButton",{Name="MiniLauncher",Visible=false,Text="",AutoButtonColor=false,AnchorPoint=Vector2.new(.5,.5),Position=Holder.Position,Size=UDim2.fromOffset(48,48),BackgroundColor3=T.Bg,BackgroundTransparency=.03,BorderSizePixel=0,ZIndex=500},SG),12);S(Mini,T.Red,.35,1)
- N("ImageLabel",{Image=SCOOPHUB_LOGO,ImageColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(36,36),ZIndex=501},Mini)
+ N("ImageLabel",{Image=cfg.Logo or "rbxassetid://90541504618217",BackgroundTransparency=1,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(36,36),ZIndex=501},Mini)
  local function miniDefault()local c=workspace.CurrentCamera;if not c then return expanded end;local v=c.ViewportSize;local p=Min.AbsolutePosition;local s=Min.AbsoluteSize;return UDim2.fromOffset(math.clamp(p.X+s.X/2,28,v.X-28),math.clamp(p.Y+s.Y/2,28,v.Y-28))end
  local function setMin(v)minimized=v==true;if minimized then expanded=Holder.Position;if not miniPos then miniPos=miniDefault()end;Mini.Position=miniPos;Mini.Visible=true;Body.Visible=false;Holder.Visible=false;Min.Text="+"else miniPos=Mini.Position;Holder.Position=expanded;Holder.Visible=true;Body.Visible=true;Mini.Visible=false;Min.Text="-"end end
  own(Min.Activated:Connect(function()setMin(not minimized)end))
